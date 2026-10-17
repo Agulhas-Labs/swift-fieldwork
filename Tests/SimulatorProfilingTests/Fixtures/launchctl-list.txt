@@ -1,0 +1,16 @@
+PID	Status	Label
+-	0	com.apple.progressd
+-	0	com.apple.CoreAuthentication.daemon
+-	0	com.apple.cloudphotod
+87302	0	com.apple.homed
+87353	0	com.apple.modelcatalogd
+87326	0	com.apple.dataaccess.dataaccessd
+-	0	com.apple.DragUI.druid
+-	0	com.apple.bird
+87319	0	com.apple.fitnesscoachingd
+87199	0	com.apple.biomed
+87252	0	com.apple.nsurlsessiond
+87501	0	com.apple.devicecheckd
+87321	0	com.apple.ind
+87333	0	com.apple.iconservices.iconservicesagent
+87313	0	com.apple.diagnosticextensionsd

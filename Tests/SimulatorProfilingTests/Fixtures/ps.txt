@@ -1,0 +1,12 @@
+    1     0  45:24.67 /sbin/launchd
+  334     1  33:53.91 /usr/libexec/logd
+87182     1   0:04.48 launchd_sim /Users/tester/Library/Developer/CoreSimulator/Devices/__UDID__/data/var/run/launchd_bootstrap.plist
+87184 87182   0:00.50 /RT/usr/libexec/UserEventAgent (System)
+87185 87182   0:05.80 /RT/System/Library/CoreServices/SpringBoard.app/SpringBoard
+87186 87182   0:00.79 /RT/usr/libexec/logd
+87187 87182   0:01.93 /RT/System/Library/PrivateFrameworks/AssistantServices.framework/assistantd
+87223 87182   0:00.53 /RT/usr/sbin/notifyd
+87301 87182   0:00.18 /RT/System/Library/PrivateFrameworks/SystemStatusServer.framework/Support/systemstatusd
+87364 87182   0:02.49 /RT/Applications/PosterBoard.app/PosterBoard
+87501 87182   0:00.25 /RT/System/Library/PrivateFrameworks/DeviceCheckInternal.framework/devicecheckd
+  901     1   0:00.09 launchd_sim /Users/tester/Library/Developer/CoreSimulator/Devices/__OTHER__/data/var/run/launchd_bootstrap.plist
