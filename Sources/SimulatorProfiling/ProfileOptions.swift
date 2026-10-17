@@ -35,6 +35,7 @@ public struct ProfileOptions: Equatable, Sendable {
     public var onlyTesting: String?
     public var logWindow = 45
     public var maxKept = 12
+    public var baselines = 3
     public var stage = ProfileStage.all
     public var from: String?
     public var candidates: [String]?
@@ -48,13 +49,13 @@ public struct ProfileOptions: Equatable, Sendable {
                              [--profile-version 1] [--allow-booted]
                              [--stage all|cost|health] [--from <profile.json>]
                              [--app <path.app> --bundle-id <id>] [--xctestrun <path> --only-testing <id>]
-                             [--log-window 45] [--max-kept 12] [--candidates <label,label,...>]
+                             [--log-window 45] [--max-kept 12] [--baselines 3] [--candidates <label,label,...>]
                              [--keep <capability,capability,...>] [--swift <path.swift>]
     """
 
     private static let valued: Set = [
         "--runtime", "--device-type", "--out", "--window", "--footprint-threshold", "--cpu-threshold", "--profile-version",
-        "--app", "--bundle-id", "--xctestrun", "--only-testing", "--log-window", "--max-kept", "--stage", "--from", "--candidates", "--keep", "--swift",
+        "--app", "--bundle-id", "--xctestrun", "--only-testing", "--log-window", "--max-kept", "--baselines", "--stage", "--from", "--candidates", "--keep", "--swift",
     ]
 
     /// Parses the arguments after the program name.
@@ -104,6 +105,9 @@ public struct ProfileOptions: Equatable, Sendable {
         }
         if let text = values["--max-kept"] {
             maxKept = try Self.number(Int(text), "--max-kept", text, atLeast: 1)
+        }
+        if let text = values["--baselines"] {
+            baselines = try Self.number(Int(text), "--baselines", text, atLeast: 1)
         }
     }
 

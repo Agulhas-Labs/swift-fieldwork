@@ -45,13 +45,18 @@ enum HealthStage {
 
     private static func keptCandidates(_ candidates: [String], on device: ProfileDevice, options: ProfileOptions) throws -> [String] {
         let runner = TrialRunner(device: device, options: options)
-        ProfileCommand.log("health: baseline trial")
-        let baseline = try runner.run(disabled: [])
-        let stock = HealthCheck.evaluate(trial: baseline, baseline: baseline, disabled: [])
-        guard stock.isEmpty, baseline.launchPassed, baseline.uiTestPassed else {
-            throw HealthStageError(description: "the stock device does not pass its own health check; fix the app, the test or the device first")
+        var stocks: [TrialMeasurement] = []
+        for number in 1 ... options.baselines {
+            ProfileCommand.log("health: baseline trial \(number) of \(options.baselines)")
+            let stock = try runner.run(disabled: [])
+            guard stock.bootSeconds != nil, stock.launchPassed, stock.uiTestPassed else {
+                throw HealthStageError(description: "the stock device does not pass its own health check; fix the app, the test or the device first")
+            }
+            ProfileCommand.log("trial: stock, \(String(format: "%.1f", stock.bootSeconds ?? 0)) s boot, launch \(stock.launchSeconds.map { String(format: "%.1f", $0) } ?? "-") s")
+            stocks.append(stock)
         }
-        ProfileCommand.log("trial: stock, \(String(format: "%.1f", baseline.bootSeconds ?? 0)) s boot, launch \(baseline.launchSeconds.map { String(format: "%.1f", $0) } ?? "-") s")
+        let baseline = HealthCheck.noiseFloor(stocks)
+        ProfileCommand.log(baselineLine(stocks, baseline))
         let kept = try Bisection.kept(candidates: candidates, maxKept: options.maxKept) { set in
             let start = ProcessInfo.processInfo.systemUptime
             let trial = try runner.run(disabled: set)
@@ -81,6 +86,12 @@ enum HealthStage {
     static func candidates(_ candidates: [String], keeping kept: [Capability], in profile: ServiceProfile) -> [String] {
         let spared = Set(kept.flatMap { profile.labels(for: $0) })
         return candidates.filter { !spared.contains($0) }
+    }
+
+    private static func baselineLine(_ stocks: [TrialMeasurement], _ floor: TrialMeasurement) -> String {
+        let noisiest = floor.logCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }.prefix(3)
+            .map { "\($0.key):\($0.value)" }.joined(separator: ", ")
+        return "baseline: \(stocks.count) stock boots, boot ≤ \(String(format: "%.1f", floor.bootSeconds ?? 0)) s, launch ≤ \(String(format: "%.1f", floor.launchSeconds ?? 0)) s, noisiest: \(noisiest)"
     }
 
     private static func logPidChanges(_ trial: TrialMeasurement) {

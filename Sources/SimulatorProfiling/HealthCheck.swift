@@ -79,6 +79,22 @@ public enum HealthCheck {
         return failures
     }
 
+    /// The worst of several stock boots: the most a healthy device was seen to log, take or crash.
+    ///
+    /// A trial is compared with this, so a variation the stock boots already showed does not count against it.
+    public static func noiseFloor(_ baselines: [TrialMeasurement]) -> TrialMeasurement {
+        var floor = TrialMeasurement(bootSeconds: baselines.compactMap(\.bootSeconds).max())
+        floor.launchSeconds = baselines.compactMap(\.launchSeconds).max()
+        floor.uiTestSeconds = baselines.compactMap(\.uiTestSeconds).max()
+        floor.launchPassed = baselines.allSatisfy(\.launchPassed)
+        floor.uiTestPassed = baselines.allSatisfy(\.uiTestPassed)
+        for baseline in baselines {
+            floor.logCounts.merge(baseline.logCounts) { max($0, $1) }
+            floor.respawned.formUnion(baseline.respawned)
+        }
+        return floor
+    }
+
     /// Log floods and respawns vary from one first boot to the next, so one counts only when the same failure recurs on a second boot.
     public static func confirmed(_ first: [HealthFailure], retry: () throws -> [HealthFailure]) rethrows -> [HealthFailure] {
         let noisy = first.allSatisfy {
