@@ -2,11 +2,46 @@
 
 The agent-setup layer shared by the Fieldwork tools: [sift](https://github.com/Agulhas-Labs/sift), a Swift code index for coding agents, and [SimWalk](https://github.com/Agulhas-Labs/simwalk), deterministic UI walks of a running iOS app.
 
-It will register a tool's MCP server, hooks and rule file with coding agents (Claude Code, Cursor) and report what was done. The tool supplies its own identity as values; the package carries none.
+It holds what a tool needs to find and talk to the coding agents on a machine (Claude Code, Cursor and Codex) and to share a device between runs. The tool supplies its own identity as values; the package carries none.
+
+- `FieldworkTool`: the consumer's identity (its name and hook subcommands), and the recognition of a registered shell command as its own.
+- `AgentPaths`: where Claude Code, Cursor and Codex keep their configuration, resolved from the environment.
+- Detection, selection and the prompt: `AgentDetection` finds the agents, `AgentSelection` decides which to install into, `InstallPrompt` asks, and `InstallStepReport` and `InstallSummary` report what each step did.
+- Settings files with their backups: `SettingsFile` and `SettingsBackupFile`.
+- `Subprocess`: a bounded child-process runner.
+- The lease store: `LeaseStore` and `DeviceLease`, which let one run at a time claim a simulator or device.
+
+Not here yet, and coming in later releases: registering hooks and MCP servers, installing the rule file, writing Cursor's configuration, and a doctor.
 
 ## Status
 
-Pre-release. The module is empty until 0.1.0, and the API may change before 1.0.
+0.1.0; the API may change before 1.0.
+
+## Usage
+
+```swift
+import Fieldwork
+
+let tool = FieldworkTool(name: "gizmo", hookSubcommands: ["pre-tool-use", "stop"])
+let environment = ProcessInfo.processInfo.environment
+
+// Which agents are on this machine?
+let detection = AgentDetection.detect(AgentDetection.Machine(environment: environment), tool: tool)
+
+// Which of them to install into, given the command's flags and whether a terminal is attached.
+let flags = AgentSelection.Flags(dryRun: false)
+let selection = AgentSelection.decide(flags, detection: detection, isInteractive: true)
+
+// Ask once per detected agent; the closure reads a line from the terminal.
+if case let .ask(agents) = selection {
+    let prompt = InstallPrompt(tool: tool) { question in
+        print(question, terminator: "")
+        return readLine()
+    }
+    let accepted = AgentSelection.afterAsking(accepted: prompt.choose(agents))
+    print(accepted)
+}
+```
 
 ## Requirements
 
@@ -14,7 +49,7 @@ A Swift 6.2 toolchain and macOS 13 or later. Foundation only; no dependencies.
 
 ## Depending on it
 
-Once 0.1.0 is tagged, in `Package.swift`:
+Version 0.1.0 is tagged. In `Package.swift`:
 
 ```swift
 .package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.1.0")

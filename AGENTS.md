@@ -3,7 +3,7 @@
 The index to working in this repo. Read the files it links before starting a task.
 
 ## Project shape
-swift-fieldwork is a Swift package with one library, `Fieldwork`, depending on Foundation only. It is the agent-setup layer shared by sift and SimWalk: it will register a tool's MCP server, hooks and rule file with coding agents and reports what was done.
+swift-fieldwork is a Swift package with one library, `Fieldwork`, depending on Foundation only. It is the agent-setup layer shared by sift and SimWalk. It holds the consumer's identity (`FieldworkTool`), the Claude Code, Cursor and Codex locations (`AgentPaths`), agent detection, selection and the install prompt, settings files with their backups, a bounded `Subprocess` runner and the device-lease store; registering hooks and MCP servers, installing rules, writing Cursor's configuration and a doctor are later releases.
 
 ## Commands
 - `sh setup.sh` — once per checkout: installs SwiftLint and SwiftFormat and activates `githooks/`.
