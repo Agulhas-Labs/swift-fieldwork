@@ -34,4 +34,13 @@ struct ToolIdentityTests {
         #expect(try String(contentsOf: settings, encoding: .utf8) == "new")
         #expect(try String(contentsOf: directory.url.appendingPathComponent("settings.json.bak-gizmo"), encoding: .utf8) == "old")
     }
+
+    /// A second tool does not recognise the first tool's command as its own.
+    @Test
+    func aSecondToolDoesNotRecogniseTheFirstToolsCommand() {
+        let widget = FieldworkTool(name: "widget", hookSubcommands: ["stop"])
+
+        #expect(!widget.runs("/opt/bin/gizmo stop", subcommand: "stop"))
+        #expect(!widget.isMentioned(in: "gizmo stop"))
+    }
 }
