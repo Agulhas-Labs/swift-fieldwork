@@ -48,15 +48,18 @@ public struct TrialRunner: Sendable {
         var trial = TrialMeasurement(bootSeconds: Self.now() - bootStart)
         trial.readBack = (try? DisabledServicesOverride.readBack(udid: device.udid)) ?? []
         let snapshotTime = Self.now()
-        let before = try pids()
+        let before = try jobs()
         launch(into: &trial)
         runUITest(into: &trial)
         let remaining = Double(options.logWindow) - (Self.now() - snapshotTime)
         if remaining > 0 {
             Thread.sleep(forTimeInterval: remaining)
         }
-        let after = try pids()
-        trial.respawned = Set(before.filter { label, pid in after[label].map { $0 != pid } ?? false }.keys)
+        let after = try jobs()
+        trial.respawned = Self.respawned(before: before, after: after)
+        trial.pidChanged = Dictionary(uniqueKeysWithValues: Self.pidChanged(before: before, after: after).compactMap { label in
+            after[label].map { (label, $0.status) }
+        })
         let log = try device.spawn(["log", "show", "--last", "\(options.logWindow)s", "--style", "ndjson"], deadline: 120)
         trial.logCounts = LogCounts.count(ndjson: log.standardOutput)
         return trial
@@ -88,11 +91,29 @@ public struct TrialRunner: Sendable {
         trial.uiTestPassed = output?.succeeded ?? false
     }
 
-    /// The pid of every running job by label.
-    private func pids() throws -> [String: Int32] {
+    /// The labels that were running in `before` and crashed by `after`.
+    ///
+    /// A changed pid with a clean exit or a kill by launchd (`-9`, `-15`) is an idle daemon relaunched, not a crash.
+    static func respawned(before: [String: LaunchctlJob], after: [String: LaunchctlJob]) -> Set<String> {
+        Set(pidChanged(before: before, after: after).filter { label in
+            guard let status = after[label]?.status else { return false }
+            return status > 0 || (status < 0 && status != -9 && status != -15)
+        })
+    }
+
+    /// The labels that were running in `before` and have another pid, or none, in `after`, sorted.
+    static func pidChanged(before: [String: LaunchctlJob], after: [String: LaunchctlJob]) -> [String] {
+        before.compactMap { label, job in
+            guard let pid = job.pid, let now = after[label], now.pid != pid else { return nil }
+            return label
+        }.sorted()
+    }
+
+    /// Every job by label.
+    private func jobs() throws -> [String: LaunchctlJob] {
         let output = try device.spawn(["launchctl", "list"], deadline: 30)
         guard output.succeeded else { throw ProfileDeviceError(command: "launchctl list", detail: output.standardError) }
-        return Dictionary(LaunchctlList.runningLabels(parsing: output.standardOutput).map { ($0.value, $0.key) }, uniquingKeysWith: { first, _ in first })
+        return LaunchctlList.jobs(parsing: output.standardOutput)
     }
 
     private func simctl(_ arguments: [String], deadline: TimeInterval) -> Bool {

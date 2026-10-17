@@ -58,11 +58,14 @@ enum HealthStage {
             let first = HealthCheck.evaluate(trial: trial, baseline: baseline, disabled: Set(set))
             try rejectReadBack(first)
             ProfileCommand.log("trial: \(set.count) off, failures [\(describe(first, runner))], \(seconds(since: start)) s")
+            logPidChanges(trial)
             let failures = try HealthCheck.confirmed(first) {
                 let retryStart = ProcessInfo.processInfo.systemUptime
-                let again = try HealthCheck.evaluate(trial: runner.run(disabled: set), baseline: baseline, disabled: Set(set))
+                let retried = try runner.run(disabled: set)
+                let again = HealthCheck.evaluate(trial: retried, baseline: baseline, disabled: Set(set))
                 try rejectReadBack(again)
                 ProfileCommand.log("trial: \(set.count) off, retry, failures [\(describe(again, runner))], \(seconds(since: retryStart)) s")
+                logPidChanges(retried)
                 return again
             }
             if failures != first {
@@ -78,6 +81,11 @@ enum HealthStage {
     static func candidates(_ candidates: [String], keeping kept: [Capability], in profile: ServiceProfile) -> [String] {
         let spared = Set(kept.flatMap { profile.labels(for: $0) })
         return candidates.filter { !spared.contains($0) }
+    }
+
+    private static func logPidChanges(_ trial: TrialMeasurement) {
+        guard !trial.pidChanged.isEmpty else { return }
+        ProfileCommand.log("  pid changed: " + trial.pidChanged.sorted { $0.key < $1.key }.map { "\($0.key) (status \($0.value))" }.joined(separator: ", "))
     }
 
     private static func rejectReadBack(_ failures: [HealthFailure]) throws {

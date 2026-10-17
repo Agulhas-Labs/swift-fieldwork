@@ -17,8 +17,10 @@ public struct TrialMeasurement: Equatable, Sendable {
     public var uiTestPassed = true
     /// Log lines in the window by the basename of the process that wrote them.
     public var logCounts: [String: Int] = [:]
-    /// Labels whose pid changed between the two snapshots.
+    /// Labels that crashed between the two snapshots.
     public var respawned: Set<String> = []
+    /// The last exit status of every label whose pid changed between the two snapshots.
+    public var pidChanged: [String: Int32] = [:]
     /// The labels the booted device reports as disabled.
     public var readBack: Set<String> = []
 
