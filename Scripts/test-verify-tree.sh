@@ -342,6 +342,18 @@ g -C "$H" add -A && g -C "$H" commit -q -m "tidy" -m "Nothing to see."
 gate --rev HEAD
 expect "a clean commit" 0 "0 findings in 2 files (3 sibling names)"
 
+# --rev on an annotated tag reads the tag's own tagger and message as well as its commit.
+fresh tags
+g -C "$H" tag -a -m "Borrowed from ZipZap." v-msg
+gate --rev v-msg
+expect "a tag whose message names a sibling" 1 "tag v-msg: tag line 6: sibling ZipZap"
+g -C "$H" -c user.email=zed-ring@example.invalid tag -a -m "Nothing to see." v-email
+gate --rev v-email
+expect "a tag whose tagger email holds a private term" 1 "tag v-email: tag line 4: private-terms.txt:3"
+g -C "$H" tag -a -m "Nothing to see." v-clean
+gate --rev v-clean
+expect "a clean annotated tag" 0 "0 findings in 2 files (3 sibling names)"
+
 fresh no-neighbours
 mkdir -p "$CASE_DIR/empty"
 GATE_NEIGHBOURS="$CASE_DIR/empty"

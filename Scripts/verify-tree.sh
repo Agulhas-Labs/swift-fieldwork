@@ -457,6 +457,16 @@ if [ "$REV_GIVEN" = "1" ]; then
     hgit -c log.showSignature=false log -1 --format='%an%n%ae%n%cn%n%ce%n%B' "$REV_SHA" > "$META" 2>/dev/null \
         || refuse "git log failed reading the metadata of $REV"
     SHORT_SHA="$(hgit rev-parse --short "$REV_SHA" 2>/dev/null)" || refuse "git rev-parse failed abbreviating $REV_SHA"
+
+    # An annotated tag is an object of its own, with a tagger and a message that a push of the tag publishes
+    # and that the commit's text does not hold. Its whole text goes after the commit's, to be read the same way.
+    COMMIT_LINES="$(LC_ALL=C wc -l < "$META")" || refuse "wc failed counting the metadata of $REV"
+    COMMIT_LINES=$((COMMIT_LINES + 0))
+    REV_OBJ="$(hgit rev-parse --verify --quiet "$REV" 2>/dev/null)" || refuse "git rev-parse failed resolving $REV"
+    REV_TYPE="$(hgit cat-file -t "$REV_OBJ" 2>/dev/null)" || refuse "git cat-file failed reading the type of $REV"
+    if [ "$REV_TYPE" = "tag" ]; then
+        hgit cat-file -p "$REV_OBJ" >> "$META" 2>/dev/null || refuse "git cat-file failed reading the tag $REV"
+    fi
 fi
 
 # ---------------------------------------------------------------------------------------------------
@@ -484,14 +494,19 @@ finding() {
 }
 
 # meta_findings <source>: reads the line numbers of matches in $META and prints one finding per field
-# they fall in. Lines 1-2 are the author's name and email, 3-4 the committer's, the rest the message.
+# they fall in. Lines 1-2 are the author's name and email, 3-4 the committer's, the rest of the first
+# $COMMIT_LINES the message; any lines after those are an annotated tag's object (tagger, then message).
 meta_findings() {
-    LC_ALL=C awk '{ n = $1 + 0
-                    if (n <= 2) field = "author"; else if (n <= 4) field = "committer"; else field = "message line " (n - 4)
+    LC_ALL=C awk -v commit_lines="$COMMIT_LINES" '{ n = $1 + 0
+                    if (n <= 2) field = "c author"; else if (n <= 4) field = "c committer"; else if (n <= commit_lines) field = "c message line " (n - 4)
+                    else field = "t tag line " (n - commit_lines)
                     if (!(field in seen)) { seen[field] = 1; print field } }' "$SCRATCH/meta-lines" > "$SCRATCH/meta-fields" \
         || refuse "awk failed on the metadata matches for $1"
     while IFS= read -r FIELD; do
-        printf 'commit %s: %s: %s\n' "$SHORT_SHA" "$FIELD" "$1" | tee -a "$FINDINGS"
+        case "$FIELD" in
+            "t "*) printf 'tag %s: %s: %s\n' "$REV" "${FIELD#t }" "$1" | tee -a "$FINDINGS" ;;
+            *) printf 'commit %s: %s: %s\n' "$SHORT_SHA" "${FIELD#c }" "$1" | tee -a "$FINDINGS" ;;
+        esac
     done < "$SCRATCH/meta-fields"
 }
 

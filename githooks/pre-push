@@ -47,6 +47,12 @@ while read -r local_ref local_sha remote_ref remote_sha; do
       ;;
     *) commits=$(git rev-list "$local_sha" --not --remotes) || exit 1 ;;
   esac
+  # An annotated tag's tagger and message are published with it and are in no commit, so the tag object is
+  # scanned itself, even where every commit it points to is already on the remote.
+  if [ "$(git cat-file -t "$local_sha" 2>/dev/null)" = "tag" ]; then
+    sh Scripts/verify-tree.sh --rev "$local_sha" || { echo "pre-push: the privacy gate failed on the tag $local_ref (a contributor without the maintainer's lists: see README, FIELDWORK_PRIVACY_GATE=skip)"; exit 1; }
+    scanned=$((scanned + 1))
+  fi
   for sha in $commits; do
     sh Scripts/verify-tree.sh --rev "$sha" || { echo "pre-push: the privacy gate failed on $sha ($local_ref) (a contributor without the maintainer's lists: see README, FIELDWORK_PRIVACY_GATE=skip)"; exit 1; }
     scanned=$((scanned + 1))
