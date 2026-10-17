@@ -1,0 +1,19 @@
+# Terms the privacy gate (Scripts/verify-tree.sh) looks for in every file a commit would publish.
+#
+# Format: one POSIX extended regular expression per line, matched case-insensitively (grep -iE).
+# A line whose first non-blank character is `#` is a comment; blank lines are skipped; leading and
+# trailing whitespace is trimmed, so a pattern that must start or end with a space spells it `[ ]`.
+# A finding cites this file by line number (`private-terms.txt:<n>`), so keep one term per line.
+#
+# This file is published with the rest of the repository, so it holds no terms of its own: every term
+# that would identify the owner, a device or a private folder lives in the external list
+# (~/.config/fieldwork/private-terms.txt, or the file FIELDWORK_PRIVATE_TERMS names), whose terms are never
+# printed. The names of the other projects on this machine are not written down either: the gate discovers
+# them from the primary checkout's neighbours. A generic term that is safe to publish may be added here.
+
+# Generic phrases that point at an employer's work, matched as whole words. They are the published list of
+# the sibling tool sift (its Distribution/private-terms.txt), so publishing them here leaks nothing.
+(^|[^[:alnum:]_])work (machine|mac|laptop|computer|monorepo|codebase|repo|repository|project|code)([^[:alnum:]_]|$)
+(^|[^[:alnum:]_])day job([^[:alnum:]_]|$)
+(^|[^[:alnum:]_])(my )?employer([^[:alnum:]_]|$)
+(^|[^[:alnum:]_])at work([^[:alnum:]_]|$)

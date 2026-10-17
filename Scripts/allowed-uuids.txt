@@ -1,0 +1,6 @@
+# UUID-shaped strings a commit may publish (Scripts/verify-tree.sh, check (f)). Any other id in the
+# commit is a finding, since a real simulator's or device's UDID cannot be told from a placeholder by its
+# shape: list one here only after checking it was made by hand, never copied from a device or a run.
+#
+# Format: `<uuid> <reason>`, one per line, matched case-insensitively. `#` starts a comment only at the
+# start of a line; an entry holding whitespace then `#` is refused.

@@ -1,0 +1,6 @@
+# Binary files a commit may publish (Scripts/verify-tree.sh). The gate cannot read inside a binary file,
+# so every one in the commit is a finding unless it is listed here, after a person has checked it
+# (`strings -a <file>` against both term lists and the sibling names), with the SHA-256 they checked: a
+# changed file is a finding again until it is re-checked.
+#
+# Format: `<repo-relative path> <lowercase sha256>`, one per line. `#` starts a comment line.

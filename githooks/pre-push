@@ -1,0 +1,57 @@
+#!/bin/sh
+#
+# pre-push: each gate's self-test passes before the gate is trusted; the test suite passes with a checked test
+# count and warnings as errors; and every commit the push publishes passes the privacy gate, its tree and its
+# metadata. A missing script is a refusal, not a pass.
+#
+# FIELDWORK_PRIVACY_GATE=skip skips the privacy gate alone, for a contributor whose machine lacks the
+# maintainer's external lists; the self-tests and the test gate still run. Any other value, or none, runs it.
+
+set -u
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+for script in Scripts/test-swift-test-gate.sh Scripts/swift-test-gate.sh Scripts/test-verify-tree.sh Scripts/verify-tree.sh; do
+  [ -f "$script" ] || { echo "pre-push: $script is missing, so the push is refused"; exit 1; }
+done
+
+echo "==== test gate self-test ===="
+sh Scripts/test-swift-test-gate.sh || { echo "pre-push: the test gate's self-test failed"; exit 1; }
+
+echo "==== swift test (strict, count checked) ===="
+sh Scripts/swift-test-gate.sh -Xswiftc -warnings-as-errors || { echo "pre-push: the test gate failed"; exit 1; }
+
+echo "==== privacy gate self-test ===="
+sh Scripts/test-verify-tree.sh || { echo "pre-push: the privacy gate's self-test failed"; exit 1; }
+
+if [ "${FIELDWORK_PRIVACY_GATE:-}" = "skip" ]; then
+  echo "pre-push: privacy gate skipped (FIELDWORK_PRIVACY_GATE=skip); the maintainer's push runs it"
+  exit 0
+fi
+
+# Every pushed commit is public history, not only the tip, so each one is scanned. Git writes one line per
+# ref on stdin: <local ref> <local sha> <remote ref> <remote sha>; an all-zero sha is a ref that does not
+# exist on that side.
+echo "==== privacy gate (every pushed commit) ===="
+scanned=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$local_sha" in *[!0]*) ;; *) continue ;; esac
+  case "$remote_sha" in
+    *[!0]*)
+      # Without the remote's commit there is no range to scan, and rev-list's own error says nothing useful.
+      git cat-file -e "$remote_sha^{commit}" 2>/dev/null || {
+        echo "pre-push: $remote_ref's remote commit $remote_sha is not in this clone; fetch, then push again"
+        exit 1
+      }
+      commits=$(git rev-list "$remote_sha..$local_sha") || exit 1
+      ;;
+    *) commits=$(git rev-list "$local_sha" --not --remotes) || exit 1 ;;
+  esac
+  for sha in $commits; do
+    sh Scripts/verify-tree.sh --rev "$sha" || { echo "pre-push: the privacy gate failed on $sha ($local_ref) (a contributor without the maintainer's lists: see README, FIELDWORK_PRIVACY_GATE=skip)"; exit 1; }
+    scanned=$((scanned + 1))
+  done
+done
+if [ "$scanned" -eq 0 ]; then
+  sh Scripts/verify-tree.sh || { echo "pre-push: the privacy gate failed (a contributor without the maintainer's lists: see README, FIELDWORK_PRIVACY_GATE=skip)"; exit 1; }
+fi
