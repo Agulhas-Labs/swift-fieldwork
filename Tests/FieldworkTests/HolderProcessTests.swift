@@ -6,13 +6,13 @@ import Testing
 
 /// When the process a lease lives as long as is probably not one that outlives the command asking.
 struct HolderProcessTests {
-    /// Under a wrapper the search does not know, the holder is the command's own parent, which exits with it: the warning names it and `--holder-pid`.
+    /// Under a wrapper the search does not know, the holder is the command's own parent, which exits with it: the warning names it.
     @Test
     func anUnknownDirectParentIsWarnedAbout() throws {
         let warning = try #require(HolderProcess.unverifiedHolderWarning(holder: 500, parent: 500, name: "caffeinate"))
 
         #expect(warning.contains("pid 500 (caffeinate)"))
-        #expect(warning.contains("--holder-pid"))
+        #expect(warning.contains("may exit with it and free the lease at once"))
     }
 
     /// A known long-lived parent, and an ancestor further up than the parent, are not warned about.

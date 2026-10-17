@@ -224,7 +224,8 @@ public struct LeaseStore: Sendable {
         }) ?? 0
     }
 
-    func url(for udid: String) -> URL {
+    /// The file a lease on `udid` lives in.
+    public func url(for udid: String) -> URL {
         directory.appendingPathComponent("\(udid).\(Self.fileExtension)")
     }
 

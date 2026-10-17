@@ -9,12 +9,15 @@ public enum LeaseStoreError: Error, Equatable, Sendable, CustomStringConvertible
     case held(udid: String, holderPID: Int32, expiresAt: Date)
     /// A lease file that does not decode — never reclaimed, since what cannot be read cannot be judged free.
     case unreadable(path: String)
+    /// No lease carries the token presented.
     case noSuchLease
+    /// The lease on the device ran out before it was used.
     case expired(udid: String, expiresAt: Date)
     /// A lease whose holder has exited: reclaimable by anyone, so renewing it would keep nobody off the device.
     case holderExited(udid: String, holderPID: Int32)
     /// A device a lease cloned whose lease has lapsed: it is released — the clone deleted — and never leased again.
     case awaitingDeletion(udid: String)
+    /// The lease directory or a lease file could not be written.
     case storeFailed(path: String, reason: String)
 
     public var description: String {
@@ -30,7 +33,7 @@ public enum LeaseStoreError: Error, Equatable, Sendable, CustomStringConvertible
         case let .holderExited(udid, pid):
             "the lease on \(udid) lived as long as pid \(pid), which has exited, so any session may reclaim it and renewing it would keep nobody off the device"
         case let .awaitingDeletion(udid):
-            "\(udid) is a clone a lease made, and that lease has lapsed or is being released, so the device is deleted rather than leased again; nothing on the device was touched"
+            "\(udid) is a clone a lease made, and that lease has lapsed or is being released, so the device is deleted rather than leased again"
         case let .storeFailed(path, reason):
             "the lease store at \(path) could not be written: \(reason)"
         }

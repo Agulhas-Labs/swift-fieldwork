@@ -30,7 +30,7 @@ public struct HolderProcess {
         guard holder == parent else { return nil }
         let processName = name ?? Self.name(of: holder) ?? "unknown"
         guard !longLived.contains(processName) else { return nil }
-        return "the holder is pid \(holder) (\(processName)), this command's parent, which may exit with it and free the lease at once — pass --holder-pid <pid> naming the session's long-lived process"
+        return "the holder is pid \(holder) (\(processName)), this command's parent, which may exit with it and free the lease at once"
     }
 
     /// A process's short name, for a listing; `nil` once it is gone.
