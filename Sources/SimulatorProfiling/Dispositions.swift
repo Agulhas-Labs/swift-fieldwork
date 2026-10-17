@@ -8,7 +8,7 @@ import SimulatorServices
 public enum Dispositions {
     /// One entry per job, sorted by label.
     ///
-    /// A job that never ran is `notRunning`; one that ran and starts at boot is `core`; one that ran and starts on demand is a `disable` candidate when it costs at least a threshold, and `belowThreshold` otherwise.
+    /// A job that never ran is `notRunning`; one that ran and starts at boot is `core`; one that ran, starts on demand and is infrastructure is `infrastructure`; one that ran and starts on demand is a `disable` candidate when it costs at least a threshold, and `belowThreshold` otherwise.
     public static func classify(
         jobs: [LaunchJob],
         cost: [String: ServiceCost],
@@ -25,7 +25,11 @@ public enum Dispositions {
                 disposition = .core
             case .onDemand, .other:
                 let heavy = (measured.peakFootprintMB ?? 0) >= footprintThresholdMB || measured.cpuSeconds >= cpuThresholdSeconds
-                disposition = heavy ? .disable : .belowThreshold
+                if InfrastructureServices.matches(job.label) {
+                    disposition = .infrastructure
+                } else {
+                    disposition = heavy ? .disable : .belowThreshold
+                }
             }
             return ServiceEntry(
                 label: job.label, domain: job.domain, start: job.start, ranAtBoot: true,

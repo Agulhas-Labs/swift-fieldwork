@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added: the `simulator-profile` tool, stages 1 to 3: it inventories a runtime, measures what each service costs on a stock boot, then checks, with the candidates off, that the device still boots, reads the override back, installs and launches an app, runs a UI test and keeps its log and respawns quiet, and keeps on any candidate the device needs (`--stage`, `--from`, `--app`, `--bundle-id`, `--xctestrun`, `--only-testing`, `--log-window`, `--max-kept`, `--candidates`, `--swift`); and `Disposition.infrastructure` with `InfrastructureServices`, the services every app needs, which are never candidates.
 - Added: the `SimulatorServices` library: `SimulatorRuntime`, `RuntimeInventory` (with `LaunchJob`), `Capability`, `ProjectDeclarations`, `ServiceProfile` (with `ServiceProfiles` and `SlimPlan`) and `DisabledServicesOverride`, which read a runtime's launchd jobs, map project capabilities to them and write the per-device disabled-services file a simulator reads at boot.
 
 ## 0.1.0

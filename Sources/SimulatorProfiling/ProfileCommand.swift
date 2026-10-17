@@ -65,6 +65,32 @@ public enum ProfileCommand {
                 throw ProfileUsageError(message: "a measurement beside another simulator is not a measurement; shut these down or pass --allow-booted: \(booted.joined(separator: ", "))")
             }
         }
+        var profile: ServiceProfile
+        if options.stage == .health, let path = options.from {
+            profile = try JSONDecoder().decode(ServiceProfile.self, from: Data(contentsOf: URL(fileURLWithPath: path)))
+            guard profile.runtime.identifier == options.runtime else {
+                throw ProfileUsageError(message: "the profile \(path) is for \(profile.runtime.identifier), not \(options.runtime)")
+            }
+        } else {
+            profile = try costStage(options, runtime: runtime, inventory: inventory, registry: registry)
+        }
+        if options.stage != .cost {
+            profile = try HealthStage.run(profile, options: options, registry: registry)
+        }
+        let url = URL(fileURLWithPath: options.output)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data(ProfileSwiftSource.json(profile).utf8).write(to: url)
+        let counts = Dictionary(grouping: profile.services, by: \.disposition).mapValues(\.count)
+        let summary = [Disposition.core, .infrastructure, .disable, .keptByHealth, .belowThreshold, .notRunning].map { "\(counts[$0] ?? 0) \($0.rawValue)" }
+        log("wrote \(options.output): \(profile.services.count) services, \(summary.joined(separator: ", "))")
+        if let swift = options.swift {
+            try Data(ProfileSwiftSource.render(profile).utf8).write(to: URL(fileURLWithPath: swift))
+            try log("wrote \(swift); add this line to ServiceProfiles.sources: \(ProfileSwiftSource.registryLine(profile))")
+        }
+    }
+
+    /// Boots a stock device, measures what each service costs and classifies them.
+    private static func costStage(_ options: ProfileOptions, runtime: SimulatorRuntime, inventory: RuntimeInventory, registry: DeviceRegistry) throws -> ServiceProfile {
         log("load average at start: \(loadAverage())")
         let device = try ProfileDevice.create(deviceType: options.deviceType, runtime: options.runtime, registry: registry)
         log("created device \(device.udid); booting")
@@ -83,7 +109,7 @@ public enum ProfileCommand {
             jobs: inventory.jobs, cost: measurement.costs,
             footprintThresholdMB: options.footprintThresholdMB, cpuThresholdSeconds: options.cpuThresholdSeconds
         )
-        let profile = ServiceProfile(
+        return ServiceProfile(
             profileVersion: options.profileVersion,
             runtime: ProfileRuntime(identifier: runtime.identifier, version: runtime.version, build: runtime.buildversion),
             deviceType: options.deviceType,
@@ -92,13 +118,6 @@ public enum ProfileCommand {
             services: entries,
             capabilities: capabilities(of: inventory)
         )
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        let url = URL(fileURLWithPath: options.output)
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try encoder.encode(profile).write(to: url)
-        let counts = Dictionary(grouping: entries, by: \.disposition).mapValues(\.count)
-        log("wrote \(options.output): \(entries.count) services, \(counts[.core] ?? 0) core, \(counts[.disable] ?? 0) disable, \(counts[.belowThreshold] ?? 0) belowThreshold, \(counts[.notRunning] ?? 0) notRunning")
     }
 
     /// Boots the device while sampling it, and answers what it cost and how long the boot took.
@@ -188,7 +207,7 @@ public enum ProfileCommand {
         return formatter.string(from: Date())
     }
 
-    private static func log(_ message: String) {
+    static func log(_ message: String) {
         FileHandle.standardError.write(Data((message + "\n").utf8))
     }
 

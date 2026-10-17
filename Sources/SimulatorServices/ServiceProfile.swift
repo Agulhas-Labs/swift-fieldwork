@@ -13,6 +13,8 @@ public enum Disposition: String, Codable, Sendable {
     case belowThreshold
     /// Never ran at boot.
     case notRunning
+    /// A service every app needs to install, launch and run, so it is never a candidate for switching off.
+    case infrastructure
     /// Switching it off broke the health check.
     case keptByHealth
 }

@@ -86,9 +86,9 @@ public struct ProfileDevice: Sendable {
         try run(["boot", udid], deadline: 60)
     }
 
-    /// Waits for the boot to finish, up to five minutes.
-    public func waitUntilBooted() throws {
-        try run(["bootstatus", udid, "-b"], deadline: 300)
+    /// Waits for the boot to finish, up to `deadline` seconds (five minutes by default).
+    public func waitUntilBooted(deadline: TimeInterval = 300) throws {
+        try run(["bootstatus", udid, "-b"], deadline: deadline)
     }
 
     /// Shuts the device down.
