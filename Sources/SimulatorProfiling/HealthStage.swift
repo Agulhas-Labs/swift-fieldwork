@@ -14,7 +14,7 @@ enum HealthStage {
     /// The profile with the candidates the device needs marked `keptByHealth`, and the checks that ran recorded.
     static func run(_ profile: ServiceProfile, options: ProfileOptions, registry: DeviceRegistry) throws -> ServiceProfile {
         let known = Set(profile.services.map(\.label))
-        let candidates: [String]
+        var candidates: [String]
         if let given = options.candidates {
             if let unknown = given.first(where: { !known.contains($0) }) {
                 throw ProfileUsageError(message: "--candidates names \(unknown), which the profile does not list")
@@ -23,6 +23,10 @@ enum HealthStage {
         } else {
             candidates = profile.disabledLabels
         }
+        for capability in options.keep {
+            ProfileCommand.log("health: kept on for the input: \(capability.rawValue) (\(profile.labels(for: capability).count) labels)")
+        }
+        candidates = Self.candidates(candidates, keeping: options.keep, in: profile)
         guard !candidates.isEmpty else {
             ProfileCommand.log("health: no candidates to check")
             return profile
@@ -70,6 +74,12 @@ enum HealthStage {
         return kept
     }
 
+    /// The candidates left once the labels serving the kept capabilities are taken out.
+    static func candidates(_ candidates: [String], keeping kept: [Capability], in profile: ServiceProfile) -> [String] {
+        let spared = Set(kept.flatMap { profile.labels(for: $0) })
+        return candidates.filter { !spared.contains($0) }
+    }
+
     private static func rejectReadBack(_ failures: [HealthFailure]) throws {
         if failures.contains(.readBack) {
             throw HealthStageError(description: "the runtime ignores the override: the device did not report the switched-off services as disabled")
@@ -100,7 +110,8 @@ enum HealthStage {
             method: ProfileMethod(
                 costWindowSeconds: method.costWindowSeconds, footprintThresholdMB: method.footprintThresholdMB,
                 cpuThresholdSeconds: method.cpuThresholdSeconds,
-                checks: HealthCheck.checkNames(installing: options.app != nil, testing: options.xctestrun != nil)
+                checks: HealthCheck.checkNames(installing: options.app != nil, testing: options.xctestrun != nil),
+                keptForInput: Set(options.keep.map(\.rawValue)).sorted()
             ),
             services: services, capabilities: profile.capabilities
         )

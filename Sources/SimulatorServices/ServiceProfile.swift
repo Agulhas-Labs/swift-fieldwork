@@ -59,12 +59,24 @@ public struct ProfileMethod: Codable, Sendable, Equatable {
     public let footprintThresholdMB: Double
     public let cpuThresholdSeconds: Double
     public let checks: [String]
+    /// The capabilities, by name, whose services stayed on during the health stage, so their being off was not checked.
+    public let keptForInput: [String]
 
-    public init(costWindowSeconds: Int, footprintThresholdMB: Double, cpuThresholdSeconds: Double, checks: [String]) {
+    public init(costWindowSeconds: Int, footprintThresholdMB: Double, cpuThresholdSeconds: Double, checks: [String], keptForInput: [String] = []) {
         self.costWindowSeconds = costWindowSeconds
         self.footprintThresholdMB = footprintThresholdMB
         self.cpuThresholdSeconds = cpuThresholdSeconds
         self.checks = checks
+        self.keptForInput = keptForInput
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        costWindowSeconds = try container.decode(Int.self, forKey: .costWindowSeconds)
+        footprintThresholdMB = try container.decode(Double.self, forKey: .footprintThresholdMB)
+        cpuThresholdSeconds = try container.decode(Double.self, forKey: .cpuThresholdSeconds)
+        checks = try container.decode([String].self, forKey: .checks)
+        keptForInput = try container.decodeIfPresent([String].self, forKey: .keptForInput) ?? []
     }
 }
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import Foundation
+import SimulatorServices
 
 /// A command line `simulator-profile` cannot use.
 public struct ProfileUsageError: Error, Equatable {
@@ -38,6 +39,7 @@ public struct ProfileOptions: Equatable, Sendable {
     public var from: String?
     public var candidates: [String]?
     public var swift: String?
+    public var keep: [Capability] = []
 
     /// The usage text.
     public static let usage = """
@@ -47,12 +49,12 @@ public struct ProfileOptions: Equatable, Sendable {
                              [--stage all|cost|health] [--from <profile.json>]
                              [--app <path.app> --bundle-id <id>] [--xctestrun <path> --only-testing <id>]
                              [--log-window 45] [--max-kept 12] [--candidates <label,label,...>]
-                             [--swift <path.swift>]
+                             [--keep <capability,capability,...>] [--swift <path.swift>]
     """
 
     private static let valued: Set = [
         "--runtime", "--device-type", "--out", "--window", "--footprint-threshold", "--cpu-threshold", "--profile-version",
-        "--app", "--bundle-id", "--xctestrun", "--only-testing", "--log-window", "--max-kept", "--stage", "--from", "--candidates", "--swift",
+        "--app", "--bundle-id", "--xctestrun", "--only-testing", "--log-window", "--max-kept", "--stage", "--from", "--candidates", "--keep", "--swift",
     ]
 
     /// Parses the arguments after the program name.
@@ -120,6 +122,21 @@ public struct ProfileOptions: Equatable, Sendable {
             let labels = text.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
             guard !labels.isEmpty else { throw ProfileUsageError(message: "--candidates needs at least one label") }
             candidates = labels
+        }
+        if let text = values["--keep"] {
+            keep = try Self.capabilities(text)
+        }
+    }
+
+    private static func capabilities(_ text: String) throws -> [Capability] {
+        let names = text.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        guard !names.isEmpty else { throw ProfileUsageError(message: "--keep needs at least one capability") }
+        return try names.map { name in
+            guard let capability = Capability(rawValue: name) else {
+                let valid = Capability.allCases.map(\.rawValue).joined(separator: ", ")
+                throw ProfileUsageError(message: "--keep names \(name), which is not a capability; the capabilities are \(valid)")
+            }
+            return capability
         }
     }
 

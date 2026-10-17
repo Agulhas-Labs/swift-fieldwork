@@ -40,7 +40,10 @@ struct ProfileSwiftSourceTests {
             ],
             "costWindowSeconds" : 30,
             "cpuThresholdSeconds" : 0.5,
-            "footprintThresholdMB" : 4
+            "footprintThresholdMB" : 4,
+            "keptForInput" : [
+
+            ]
           },
           "profileVersion" : 1,
           "runtime" : {
