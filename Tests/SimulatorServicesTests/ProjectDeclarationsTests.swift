@@ -55,4 +55,53 @@ struct ProjectDeclarationsTests {
         #expect(declarations == ProjectDeclarations())
         #expect(declarations.capabilities.isEmpty)
     }
+
+    @Test
+    func aliasesAccountForAFullyMappedApp() {
+        let declarations = ProjectDeclarations(
+            entitlements: [
+                "com.apple.developer.healthkit.access",
+                "com.apple.developer.healthkit.background-delivery",
+                "aps-environment",
+                "com.apple.developer.icloud-services",
+                "com.apple.developer.icloud-container-identifiers",
+            ],
+            infoPlistKeys: ["NSHealthShareUsageDescription", "NSHealthUpdateUsageDescription"],
+            backgroundModes: ["remote-notification"]
+        )
+        #expect(declarations.capabilities == [.healthKit, .pushNotifications, .iCloud])
+        #expect(declarations.unmapped == [])
+    }
+
+    @Test
+    func unknownDeclarationsAreReportedSorted() {
+        let declarations = ProjectDeclarations(
+            entitlements: ["com.apple.developer.siri"],
+            infoPlistKeys: ["NSLocationWhenInUseUsageDescription"],
+            backgroundModes: ["audio"]
+        )
+        #expect(declarations.unmapped == ["NSLocationWhenInUseUsageDescription", "UIBackgroundModes:audio", "com.apple.developer.siri"])
+    }
+
+    @Test
+    func inertKeysAndNonDeclarationsAreNotUnmapped() {
+        let declarations = ProjectDeclarations(
+            entitlements: ["application-identifier", "keychain-access-groups"],
+            infoPlistKeys: ["CFBundleIdentifier", "UILaunchScreen"],
+            backgroundModes: ["fetch", "processing"]
+        )
+        #expect(declarations.unmapped == [])
+        #expect(declarations.capabilities.isEmpty)
+    }
+
+    @Test
+    func readsBackgroundModesFromTheInfoPlist() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let plist = root.url.appendingPathComponent("Info.plist")
+        let data = try PropertyListSerialization.data(fromPropertyList: ["UIBackgroundModes": ["remote-notification"]], format: .xml, options: 0)
+        try data.write(to: plist)
+        let declarations = try ProjectDeclarations.read(entitlements: nil, infoPlist: plist, storeKitConfiguration: false)
+        #expect(declarations.backgroundModes == ["remote-notification"])
+    }
 }
