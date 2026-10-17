@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added: the `SimulatorServices` library: `SimulatorRuntime`, `RuntimeInventory` (with `LaunchJob`), `Capability`, `ProjectDeclarations`, `ServiceProfile` (with `ServiceProfiles` and `SlimPlan`) and `DisabledServicesOverride`, which read a runtime's launchd jobs, map project capabilities to them and write the per-device disabled-services file a simulator reads at boot.
+
 ## 0.1.0
 
 - Added: the package skeleton: repository hygiene tests, lint configuration and git hooks.

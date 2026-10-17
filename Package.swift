@@ -10,9 +10,16 @@ let package = Package(
     platforms: [.macOS(.v13)],
     products: [
         .library(name: "Fieldwork", targets: ["Fieldwork"]),
+        .library(name: "SimulatorServices", targets: ["SimulatorServices"]),
     ],
     targets: [
         .target(name: "Fieldwork"),
+        .target(name: "SimulatorServices", dependencies: ["Fieldwork"]),
+        .testTarget(
+            name: "SimulatorServicesTests",
+            dependencies: ["SimulatorServices"],
+            resources: [.copy("Fixtures")]
+        ),
         .testTarget(
             name: "FieldworkTests",
             dependencies: ["Fieldwork"],
