@@ -15,7 +15,8 @@ let package = Package(
         .target(name: "Fieldwork"),
         .testTarget(
             name: "FieldworkTests",
-            dependencies: ["Fieldwork"]
+            dependencies: ["Fieldwork"],
+            resources: [.copy("Fixtures")]
         ),
     ]
 )
