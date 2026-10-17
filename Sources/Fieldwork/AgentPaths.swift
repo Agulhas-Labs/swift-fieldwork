@@ -60,6 +60,38 @@ public enum AgentPaths {
         userHome(environment: environment).appendingPathComponent(".cursor", isDirectory: true)
     }
 
+    /// The name of Cursor's user-level MCP server file inside ``cursorDirectory(environment:)``.
+    public static let cursorMcpFileName = "mcp.json"
+
+    /// The name of Cursor's user-level hooks file inside ``cursorDirectory(environment:)``.
+    public static let cursorHooksFileName = "hooks.json"
+
+    /// The name of Codex's hooks file inside ``codexDirectory(environment:)``.
+    public static let codexHooksFileName = "hooks.json"
+
+    /// The name of Codex's configuration file inside ``codexDirectory(environment:)``.
+    public static let codexConfigFileName = "config.toml"
+
+    /// A Codex home and where it was chosen from, as a person reads it.
+    public struct CodexHome: Equatable, Sendable {
+        public let directory: URL
+        public let source: String
+
+        public init(directory: URL, source: String) {
+            self.directory = directory
+            self.source = source
+        }
+    }
+
+    /// The Codex home a run uses: `flag` (`--codex-dir`) when given, else Codex's own rule (``codexDirectory(environment:)``).
+    public static func codexHome(flag: String?, environment: [String: String]) -> CodexHome {
+        if let flag {
+            return CodexHome(directory: URL(fileURLWithPath: flag, isDirectory: true), source: "--codex-dir")
+        }
+        let fromEnvironment = environment["CODEX_HOME"].map { !$0.isEmpty } ?? false
+        return CodexHome(directory: codexDirectory(environment: environment), source: fromEnvironment ? "$CODEX_HOME" : "~/.codex")
+    }
+
     /// Codex's home as Codex itself finds it: `CODEX_HOME` when `environment` sets it, else `~/.codex` under the home directory it names.
     public static func codexDirectory(environment: [String: String]) -> URL {
         if let codexHome = environment["CODEX_HOME"], !codexHome.isEmpty {

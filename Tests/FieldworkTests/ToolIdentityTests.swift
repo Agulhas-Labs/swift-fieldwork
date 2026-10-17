@@ -43,4 +43,21 @@ struct ToolIdentityTests {
         #expect(!widget.runs("/opt/bin/gizmo stop", subcommand: "stop"))
         #expect(!widget.isMentioned(in: "gizmo stop"))
     }
+
+    /// The install prompt and the needs-flags text name the tool.
+    @Test
+    func theInstallTextsNameTheTool() {
+        let tool = FieldworkTool(name: "gizmo")
+        let detection = AgentDetection.detect(
+            AgentDetection.Machine(
+                environment: ["HOME": "/scratch/home", "PATH": "/scratch/bin"],
+                pathLookup: { $0 == "claude" ? URL(fileURLWithPath: "/scratch/bin/claude") : nil },
+                fileExists: { _ in false }
+            ),
+            tool: tool
+        )
+
+        #expect(InstallPrompt.question(.cursor, tool: tool) == "Install gizmo into Cursor? [Y/n] ")
+        #expect(AgentSelection.needsFlagsText(detected: detection, tool: tool).contains("gizmo install --yes"))
+    }
 }

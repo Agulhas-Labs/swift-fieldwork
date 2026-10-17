@@ -16,6 +16,11 @@ public struct FieldworkTool: Equatable, Sendable {
         self.hookSubcommands = hookSubcommands
     }
 
+    /// The name of the tool's rule file under `<claude>/rules/`.
+    public var installedRuleName: String {
+        "\(name).md"
+    }
+
     /// The path extension of the backup left beside a settings file the tool rewrites: `bak-<name>`, so `settings.json.bak-<name>`.
     public var backupExtension: String {
         "bak-\(name)"
