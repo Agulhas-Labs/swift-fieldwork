@@ -77,6 +77,19 @@ public enum HealthCheck {
         return failures
     }
 
+    /// Log floods and respawns vary from one first boot to the next, so one counts only when the same failure recurs on a second boot.
+    public static func confirmed(_ first: [HealthFailure], retry: () throws -> [HealthFailure]) rethrows -> [HealthFailure] {
+        let noisy = first.allSatisfy {
+            switch $0 {
+            case .logFlood, .respawn: true
+            default: false
+            }
+        }
+        guard !first.isEmpty, noisy else { return first }
+        let again = try Set(retry())
+        return first.filter { again.contains($0) }
+    }
+
     /// The checks a run makes, by the names a profile records.
     public static func checkNames(installing: Bool, testing: Bool) -> [String] {
         ["boot", "read-back", installing ? "install-launch" : "launch"] + (testing ? ["ui-test-runner"] : []) + ["log-flood", "respawn"]

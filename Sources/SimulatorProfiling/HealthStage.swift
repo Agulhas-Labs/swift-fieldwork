@@ -51,17 +51,37 @@ enum HealthStage {
         let kept = try Bisection.kept(candidates: candidates, maxKept: options.maxKept) { set in
             let start = ProcessInfo.processInfo.systemUptime
             let trial = try runner.run(disabled: set)
-            let failures = HealthCheck.evaluate(trial: trial, baseline: baseline, disabled: Set(set))
-            let seconds = ProcessInfo.processInfo.systemUptime - start
-            let names = failures.map { $0.name(installing: runner.installs) }
-            ProfileCommand.log("trial: \(set.count) off, failures [\(names.joined(separator: ", "))], \(String(format: "%.1f", seconds)) s")
-            if failures.contains(.readBack) {
-                throw HealthStageError(description: "the runtime ignores the override: the device did not report the switched-off services as disabled")
+            let first = HealthCheck.evaluate(trial: trial, baseline: baseline, disabled: Set(set))
+            try rejectReadBack(first)
+            ProfileCommand.log("trial: \(set.count) off, failures [\(describe(first, runner))], \(seconds(since: start)) s")
+            let failures = try HealthCheck.confirmed(first) {
+                let retryStart = ProcessInfo.processInfo.systemUptime
+                let again = try HealthCheck.evaluate(trial: runner.run(disabled: set), baseline: baseline, disabled: Set(set))
+                try rejectReadBack(again)
+                ProfileCommand.log("trial: \(set.count) off, retry, failures [\(describe(again, runner))], \(seconds(since: retryStart)) s")
+                return again
+            }
+            if failures != first {
+                ProfileCommand.log("trial: \(set.count) off, confirmed [\(describe(failures, runner))]")
             }
             return !failures.isEmpty
         }
         ProfileCommand.log("health: keep on \(kept.count): \(kept.joined(separator: ", "))")
         return kept
+    }
+
+    private static func rejectReadBack(_ failures: [HealthFailure]) throws {
+        if failures.contains(.readBack) {
+            throw HealthStageError(description: "the runtime ignores the override: the device did not report the switched-off services as disabled")
+        }
+    }
+
+    private static func describe(_ failures: [HealthFailure], _ runner: TrialRunner) -> String {
+        failures.map { $0.name(installing: runner.installs) }.joined(separator: ", ")
+    }
+
+    private static func seconds(since start: TimeInterval) -> String {
+        String(format: "%.1f", ProcessInfo.processInfo.systemUptime - start)
     }
 
     private static func updated(_ profile: ServiceProfile, keeping kept: Set<String>, options: ProfileOptions) -> ServiceProfile {
