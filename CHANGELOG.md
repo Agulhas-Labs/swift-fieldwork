@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Added: the Claude Code setup a tool shares: `ClaudeMcpServer` (the server's name, arguments, npm package and removal, user scope alone or then unscoped), `ClaudeMcpInstall` (registering it through `claude mcp`, decided from `.claude.json`), `ClaudeMcpRunner` and `ClaudeCLI`, `ClaudeRuleInstall` (copying and removing the agent rule) and `ClaudeInstallOutcome`.
+- Added: the Claude Code setup a tool shares: `ClaudeMcpServer` (the server's name, arguments, npm package and removal, user scope alone, or user scope and unscoped, every removal run every time), `ClaudeMcpInstall` (registering it through `claude mcp`, decided from `.claude.json`, and removing it), `ClaudeMcpRunner` and `ClaudeCLI`, `ClaudeRuleInstall` (copying and removing the agent rule) and `ClaudeInstallOutcome`.
 
 ## 0.2.0
 

@@ -51,7 +51,10 @@ public struct ClaudeMcpInstall: Equatable, Sendable {
             }
             outcome.lines.append("mcp: replaced stale registration (\(previous))")
         case .absent:
-            break
+            if server.removal == .userScopeAndUnscoped {
+                // A registration with no scope is not in the user-scope entry the plan read, and would shadow the new one.
+                _ = try remove(runner: runner)
+            }
         }
         guard let added = try runner.run(server.addArguments(binary: binary)) else {
             outcome.lines.append("mcp: `claude` is not on PATH — register the server with: \(manual)")
@@ -70,17 +73,45 @@ public struct ClaudeMcpInstall: Equatable, Sendable {
         return outcome
     }
 
-    /// Runs the server's removals in order until one succeeds, answering the last run; `nil` when there is no `claude`.
+    /// Takes the server's registration out through `runner`: every removal the server lists runs, in order, whatever the one before did, and the removal succeeded if any did.
+    ///
+    /// The answer is the first success, else the last failure; `nil` when there is no `claude`.
     private func remove(runner: any ClaudeMcpRunner) throws -> Subprocess.Output? {
+        var succeeded: Subprocess.Output?
         var last: Subprocess.Output?
         for arguments in server.removalArguments {
             guard let output = try runner.run(arguments) else { return nil }
             last = output
-            if output.succeeded {
-                break
+            if output.succeeded, succeeded == nil {
+                succeeded = output
             }
         }
-        return last
+        return succeeded ?? last
+    }
+
+    /// Removes the server named by this install, by name and without reading the config, through `runner`: reports what happened and never throws for a `claude` failure.
+    ///
+    /// Every removal the server lists runs; the line says it was removed when any did, and a failure is reported only when all failed.
+    public func uninstall(runner: any ClaudeMcpRunner) -> ClaudeInstallOutcome {
+        var outcome = ClaudeInstallOutcome()
+        let command = server.removalCommand
+        let removed: Subprocess.Output?
+        do {
+            removed = try remove(runner: runner)
+        } catch {
+            outcome.failures.append("mcp: not removed — `\(command)` could not run: \(error.localizedDescription)")
+            return outcome
+        }
+        guard let removed else {
+            outcome.lines.append("mcp: `claude` is not on PATH — remove the registration with: \(command)")
+            return outcome
+        }
+        if removed.succeeded {
+            outcome.lines.append("mcp: removed \(server.name)")
+        } else {
+            outcome.failures.append("mcp: not removed — `\(command)` failed: \(removed.failureReason)")
+        }
+        return outcome
     }
 
     /// Why `config` is there and cannot be read as the JSON object Claude Code keeps, or `nil` where it can or is not there at all: read as absent, it would send `claude mcp add` at a file nothing checked.

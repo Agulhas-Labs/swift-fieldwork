@@ -14,9 +14,13 @@ final class FakeClaude: ClaudeMcpRunner, @unchecked Sendable {
     private let addSucceeds: Bool
     /// Whether a successful `add` writes the server into the config at all.
     private let addWrites: Bool
+    /// Whether each `remove`, in the order they arrive, succeeds; a run past the end succeeds. A failed one leaves the config as it was.
+    private let removeResults: [Bool]
+    private var removeCount = 0
     private var recorded: [[String]] = []
 
-    init(config: URL, serverName: String = "gizmo", present: Bool = true, addSucceeds: Bool = true, addWrites: Bool = true) {
+    init(config: URL, serverName: String = "gizmo", present: Bool = true, addSucceeds: Bool = true, addWrites: Bool = true, removeResults: [Bool] = []) {
+        self.removeResults = removeResults
         self.config = config
         self.serverName = serverName
         self.present = present
@@ -44,6 +48,11 @@ final class FakeClaude: ClaudeMcpRunner, @unchecked Sendable {
                 let command = arguments.drop { $0 != "--" }.dropFirst()
                 servers[serverName] = ["type": "stdio", "command": command.first ?? "", "args": Array(command.dropFirst())]
             case ["mcp", "remove"]:
+                let index = removeCount
+                removeCount += 1
+                guard index >= removeResults.count || removeResults[index] else {
+                    return Subprocess.Output(succeeded: false, standardOutput: "", standardError: "remove refused")
+                }
                 servers.removeValue(forKey: serverName)
             default:
                 return Subprocess.Output(succeeded: false, standardOutput: "", standardError: "unexpected")

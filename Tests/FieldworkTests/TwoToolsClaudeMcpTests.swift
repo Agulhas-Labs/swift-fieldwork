@@ -8,7 +8,7 @@ import Testing
 /// Two tools set up through one library: what each builds, runs and writes for Claude Code never names the other.
 struct TwoToolsClaudeMcpTests {
     private static let gizmo = ClaudeMcpServer(tool: FieldworkTool(name: "gizmo"))
-    private static let widget = ClaudeMcpServer(tool: FieldworkTool(name: "widget"), removal: .userScopeThenUnscoped)
+    private static let widget = ClaudeMcpServer(tool: FieldworkTool(name: "widget"), removal: .userScopeAndUnscoped)
 
     @Test
     func theAddArgumentsAndRemovalCommandsOfTwoServersNeverMentionEachOther() {
@@ -20,7 +20,7 @@ struct TwoToolsClaudeMcpTests {
         #expect(Self.gizmo.removalArguments == [["mcp", "remove", "gizmo", "--scope", "user"]])
         #expect(Self.gizmo.removalCommand == "claude mcp remove gizmo --scope user")
         #expect(Self.widget.removalArguments == [["mcp", "remove", "widget", "--scope", "user"], ["mcp", "remove", "widget"]])
-        #expect(Self.widget.removalCommand == "claude mcp remove widget --scope user || claude mcp remove widget")
+        #expect(Self.widget.removalCommand == "claude mcp remove widget --scope user; claude mcp remove widget")
     }
 
     @Test
@@ -38,6 +38,7 @@ struct TwoToolsClaudeMcpTests {
 
         #expect(claude.calls == [
             ["mcp", "remove", "widget", "--scope", "user"],
+            ["mcp", "remove", "widget"],
             ["mcp", "add", "--transport", "stdio", "--scope", "user", "widget", "--", "/new/widget", "mcp"],
         ])
         #expect(outcome.failures.isEmpty)
@@ -64,12 +65,12 @@ struct TwoToolsClaudeMcpTests {
         #expect(try String(contentsOf: gizmoRule, encoding: .utf8) == "gizmo rule")
         #expect(try String(contentsOf: widgetRule, encoding: .utf8) == "widget rule")
 
-        let removed = try gizmo.uninstall(destination: gizmoRule)
+        let removed = gizmo.uninstall(destination: gizmoRule)
         #expect(removed.lines == ["rule: removed \(gizmoRule.path)"])
         #expect(PathKind.of(gizmoRule) == .absent)
         #expect(try String(contentsOf: widgetRule, encoding: .utf8) == "widget rule")
 
-        _ = try widget.uninstall(destination: widgetRule)
+        _ = widget.uninstall(destination: widgetRule)
         #expect(PathKind.of(widgetRule) == .absent)
     }
 }

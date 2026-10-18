@@ -108,4 +108,43 @@ struct ClaudeRuleInstallTests {
         let found = try #require(Self.install.source(forBinary: linkDirectory.appendingPathComponent("gizmo").path))
         #expect(found.path.hasSuffix("Cellar/gizmo/1.0/share/gizmo/Gizmo.md"))
     }
+
+    @Test
+    func anUninstallLeavesASymlinkAloneAndReportsADirectoryAsAFailure() throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.remove() }
+        let (_, destination) = try Self.layout(in: directory.url)
+        let checkout = directory.url.appendingPathComponent("checkout.md")
+        try "checkout rule".write(to: checkout, atomically: true, encoding: .utf8)
+        try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(atPath: destination.path, withDestinationPath: checkout.path)
+
+        let linked = Self.install.uninstall(destination: destination)
+        #expect(linked.lines == ["rule: \(destination.path) is a symlink to \(checkout.path) — left as is"])
+        #expect(!linked.changed)
+        #expect(try String(contentsOf: checkout, encoding: .utf8) == "checkout rule")
+
+        try FileManager.default.removeItem(at: destination)
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        let directoryOutcome = Self.install.uninstall(destination: destination)
+        #expect(directoryOutcome.failures == ["rule: not removed — \(destination.path) is not a plain file"])
+        #expect(PathKind.of(destination) == .directory)
+    }
+
+    @Test
+    func anUninstallThatCannotDeleteReportsItInFailuresInsteadOfThrowing() throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.remove() }
+        let (source, destination) = try Self.layout(in: directory.url)
+        _ = try Self.install.install(source: source, destination: destination)
+        let folder = destination.deletingLastPathComponent()
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: folder.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: folder.path) }
+
+        let outcome = Self.install.uninstall(destination: destination)
+
+        #expect(outcome.failures.count == 1)
+        #expect(outcome.failures.first?.hasPrefix("rule: not removed — \(destination.path): ") == true)
+        #expect(!outcome.changed)
+    }
 }

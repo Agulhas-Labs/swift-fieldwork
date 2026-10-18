@@ -39,19 +39,19 @@ public struct ClaudeMcpServer: Equatable, Sendable {
         ([binary] + arguments).joined(separator: " ")
     }
 
-    /// The arguments to `claude` of each removal, in the order they are tried.
+    /// The arguments to `claude` of each removal, in the order they run: every one runs, every time.
     public var removalArguments: [[String]] {
         switch removal {
         case .userScope:
             [["mcp", "remove", name, "--scope", "user"]]
-        case .userScopeThenUnscoped:
+        case .userScopeAndUnscoped:
             [["mcp", "remove", name, "--scope", "user"], ["mcp", "remove", name]]
         }
     }
 
-    /// The removal as a command a person can paste: with two removals, the second runs only where the first fails.
+    /// The removal as a command a person can paste: with two removals, `A; B`, never `A || B`, since the install runs both whether or not the first succeeds and a registration can be at either place.
     public var removalCommand: String {
-        removalArguments.map { (["claude"] + $0).joined(separator: " ") }.joined(separator: " || ")
+        removalArguments.map { (["claude"] + $0).joined(separator: " ") }.joined(separator: "; ")
     }
 
     /// The user-scope server of this name in Claude Code's config at `config`, or `nil` where there is none.
@@ -94,8 +94,8 @@ public extension ClaudeMcpServer {
     enum Removal: Equatable, Sendable {
         /// One removal, at user scope.
         case userScope
-        /// A removal at user scope, then one with no scope where that fails.
-        case userScopeThenUnscoped
+        /// A removal at user scope, then one with no scope, both run every time: either place can hold a registration, and the removal worked if either did.
+        case userScopeAndUnscoped
     }
 
     /// One server entry: the command it runs, spelled as a person would type it, and whether it is this tool's.

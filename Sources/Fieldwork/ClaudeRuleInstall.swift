@@ -93,7 +93,7 @@ public struct ClaudeRuleInstall: Equatable, Sendable {
     /// Deletes the rule at `destination` that the install copied in, or leaves a symlink where it is, as the install does: a link means the rule is a checkout's own file, which the install never wrote.
     ///
     /// Only the file at `destination` is touched, so another tool's rule beside it stays; nothing is said where there is nothing there.
-    public func uninstall(destination: URL) throws -> ClaudeInstallOutcome {
+    public func uninstall(destination: URL) -> ClaudeInstallOutcome {
         var outcome = ClaudeInstallOutcome()
         let path = destination.path
         switch PathKind.of(destination) {
@@ -104,7 +104,12 @@ public struct ClaudeRuleInstall: Equatable, Sendable {
         case .directory, .other:
             outcome.failures.append("rule: not removed — \(path) is not a plain file")
         case .file:
-            try FileManager.default.removeItem(at: destination)
+            do {
+                try FileManager.default.removeItem(at: destination)
+            } catch {
+                outcome.failures.append("rule: not removed — \(path): \(error.localizedDescription)")
+                return outcome
+            }
             outcome.lines.append("rule: removed \(path)")
             outcome.written.append(path)
         }
