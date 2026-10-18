@@ -92,6 +92,34 @@ struct ClaudeMcpRemovalTests {
     }
 
     @Test
+    func aStaleReplacementReportsNoFailureWhenTheUserScopeRemovalWorkedAndTheUnscopedOneFoundNothing() throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.remove() }
+        let config = try Self.config(in: directory, command: "/old/bin/gizmo")
+        let claude = FakeClaude(config: config, removeResults: [true, false])
+
+        let outcome = try Self.both.install(config: config, binary: Self.binary, runner: claude)
+
+        #expect(claude.calls.prefix(2) == [Self.user, Self.unscoped])
+        #expect(outcome.failures.isEmpty)
+        #expect(outcome.lines.first == "mcp: replaced stale registration (/old/bin/gizmo mcp)")
+    }
+
+    @Test
+    func uninstallReportsNoFailureWhenTheUserScopeRemovalWorkedAndTheUnscopedOneFoundNothing() throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.remove() }
+        let config = try Self.config(in: directory, command: Self.binary)
+        let claude = FakeClaude(config: config, removeResults: [true, false])
+
+        let outcome = Self.both.uninstall(runner: claude)
+
+        #expect(claude.calls == [Self.user, Self.unscoped])
+        #expect(outcome.lines == ["mcp: removed gizmo"])
+        #expect(outcome.failures.isEmpty)
+    }
+
+    @Test
     func uninstallRunsEveryRemovalAndSaysItRemovedWhenAnyDid() throws {
         let directory = try TemporaryDirectory()
         defer { directory.remove() }
