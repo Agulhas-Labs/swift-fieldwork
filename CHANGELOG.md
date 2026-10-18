@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added: the Claude Code setup a tool shares: `ClaudeMcpServer` (the server's name, arguments, npm package and removal, user scope alone or then unscoped), `ClaudeMcpInstall` (registering it through `claude mcp`, decided from `.claude.json`), `ClaudeMcpRunner` and `ClaudeCLI`, `ClaudeRuleInstall` (copying and removing the agent rule) and `ClaudeInstallOutcome`.
+
 ## 0.2.0
 
 - Added: the iOS 27.0 service profile, the first `ServiceProfiles` bundles: 338 services, 94 switched off, 2 kept on because the device needs them and 5 left on because no trial had them off (`Disposition.unchecked`, the candidates of the capabilities `--keep` kept on for the input app); and a test that each bundled profile file is exactly what `simulator-profile` renders from it.
