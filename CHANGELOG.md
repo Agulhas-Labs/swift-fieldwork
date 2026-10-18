@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added: `HookRegistration` (the merge, removal and fingerprint of a tool's hooks in a Claude Code `settings.json`, over a `FieldworkTool` and its events, so two tools can share one file), `HookRegistration.Event`, `HookRegistrationError` and `HookOutput` (the JSON a hook prints for Claude Code).
+
 ## 0.2.0
 
 - Added: the iOS 27.0 service profile, the first `ServiceProfiles` bundles: 338 services, 94 switched off, 2 kept on because the device needs them and 5 left on because no trial had them off (`Disposition.unchecked`, the candidates of the capabilities `--keep` kept on for the input app); and a test that each bundled profile file is exactly what `simulator-profile` renders from it.
