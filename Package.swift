@@ -11,11 +11,13 @@ let package = Package(
     products: [
         .library(name: "Fieldwork", targets: ["Fieldwork"]),
         .library(name: "SimulatorServices", targets: ["SimulatorServices"]),
+        .library(name: "SimulatorAnimations", targets: ["SimulatorAnimations"]),
         .executable(name: "simulator-profile", targets: ["SimulatorProfile"]),
     ],
     targets: [
         .target(name: "Fieldwork"),
         .target(name: "SimulatorServices", dependencies: ["Fieldwork"]),
+        .target(name: "SimulatorAnimations", dependencies: ["Fieldwork"]),
         .target(name: "SimulatorProfiling", dependencies: ["SimulatorServices", "Fieldwork"]),
         .executableTarget(name: "SimulatorProfile", dependencies: ["SimulatorProfiling"]),
         .testTarget(
@@ -23,6 +25,7 @@ let package = Package(
             dependencies: ["SimulatorProfiling"],
             resources: [.copy("Fixtures")]
         ),
+        .testTarget(name: "SimulatorAnimationsTests", dependencies: ["SimulatorAnimations"]),
         .testTarget(
             name: "SimulatorServicesTests",
             dependencies: ["SimulatorServices"],
