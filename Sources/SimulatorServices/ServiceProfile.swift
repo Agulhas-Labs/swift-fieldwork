@@ -17,6 +17,8 @@ public enum Disposition: String, Codable, Sendable {
     case infrastructure
     /// Switching it off broke the health check.
     case keptByHealth
+    /// A candidate the health check never had off, because the input app's capability kept it on; it stays on until a run that has it off passes.
+    case unchecked
 }
 
 /// A service measured on a runtime.

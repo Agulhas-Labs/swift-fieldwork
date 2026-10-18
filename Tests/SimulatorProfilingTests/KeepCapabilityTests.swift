@@ -37,6 +37,31 @@ struct KeepCapabilityTests {
         #expect(left == ["x.y", "i.one", "z.w"])
     }
 
+    @Test func `a candidate kept on for the input is unchecked, not switched off`() throws {
+        let measured = ServiceProfile(
+            profileVersion: 1,
+            runtime: profile.runtime,
+            deviceType: "d",
+            generated: "2026-01-01",
+            method: profile.method,
+            services: [
+                entry("h.one", .disable), entry("x.y", .disable), entry("z.w", .disable), entry("c.d", .core),
+            ],
+            capabilities: profile.capabilities
+        )
+        let options = try ProfileOptions.parse(base + ["--keep", "healthKit"])
+
+        let updated = HealthStage.updated(measured, keeping: ["x.y"], unchecked: ["h.one", "c.d"], ranChecks: true, options: options)
+
+        #expect(updated.services.map(\.disposition) == [.unchecked, .keptByHealth, .disable, .core])
+        #expect(updated.disabledLabels == ["z.w"])
+        #expect(updated.method.keptForInput == ["healthKit"])
+    }
+
+    private func entry(_ label: String, _ disposition: Disposition) -> ServiceEntry {
+        ServiceEntry(label: label, domain: .daemon, start: .onDemand, ranAtBoot: true, peakFootprintMB: 5, cpuSeconds: 1, disposition: disposition)
+    }
+
     @Test func `a profile written before the field decodes with none`() throws {
         let json = #"{"costWindowSeconds":30,"footprintThresholdMB":4,"cpuThresholdSeconds":0.5,"checks":["boot"]}"#
         let method = try JSONDecoder().decode(ProfileMethod.self, from: Data(json.utf8))

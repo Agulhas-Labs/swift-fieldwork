@@ -39,6 +39,16 @@ struct ConfirmedFailureTests {
         #expect(HealthCheck.confirmed([.respawn("x"), .logFlood("y")]) { [.respawn("x")] } == [.respawn("x")])
     }
 
+    @Test("a hard failure on the retry stands though the flood did not recur")
+    func hardOnRetry() {
+        #expect(HealthCheck.confirmed([.logFlood("a")]) { [.boot] } == [.boot])
+    }
+
+    @Test("a hard failure on the retry joins the floods that recurred")
+    func hardBesideRecurring() {
+        #expect(HealthCheck.confirmed([.logFlood("a")]) { [.uiTestRunner, .logFlood("a")] } == [.logFlood("a"), .uiTestRunner])
+    }
+
     @Test("failures that all recur all remain, in the first run's order")
     func all() {
         let both: [HealthFailure] = [.logFlood("a"), .respawn("b")]

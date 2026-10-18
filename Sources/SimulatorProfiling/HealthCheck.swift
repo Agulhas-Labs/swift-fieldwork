@@ -95,17 +95,18 @@ public enum HealthCheck {
         return floor
     }
 
-    /// Log floods and respawns vary from one first boot to the next, so one counts only when the same failure recurs on a second boot.
+    /// Log floods and respawns vary from one first boot to the next, so one counts only when the same failure recurs on a second boot; any other failure of the second boot stands on its own, since a boot, launch or test that fails is not noise.
     public static func confirmed(_ first: [HealthFailure], retry: () throws -> [HealthFailure]) rethrows -> [HealthFailure] {
-        let noisy = first.allSatisfy {
-            switch $0 {
-            case .logFlood, .respawn: true
-            default: false
-            }
+        guard !first.isEmpty, first.allSatisfy(isNoisy) else { return first }
+        let again = try retry()
+        return first.filter { again.contains($0) } + again.filter { !isNoisy($0) }
+    }
+
+    private static func isNoisy(_ failure: HealthFailure) -> Bool {
+        switch failure {
+        case .logFlood, .respawn: true
+        default: false
         }
-        guard !first.isEmpty, noisy else { return first }
-        let again = try Set(retry())
-        return first.filter { again.contains($0) }
     }
 
     /// The checks a run makes, by the names a profile records.

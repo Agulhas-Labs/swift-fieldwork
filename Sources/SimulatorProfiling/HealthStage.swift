@@ -26,17 +26,19 @@ enum HealthStage {
         for capability in options.keep {
             ProfileCommand.log("health: kept on for the input: \(capability.rawValue) (\(profile.labels(for: capability).count) labels)")
         }
-        candidates = Self.candidates(candidates, keeping: options.keep, in: profile)
+        let trialled = Self.candidates(candidates, keeping: options.keep, in: profile)
+        let unchecked = Set(candidates).subtracting(trialled)
+        candidates = trialled
         guard !candidates.isEmpty else {
             ProfileCommand.log("health: no candidates to check")
-            return profile
+            return updated(profile, keeping: [], unchecked: unchecked, ranChecks: false, options: options)
         }
         let device = try ProfileDevice.create(deviceType: options.deviceType, runtime: options.runtime, registry: registry)
         ProfileCommand.log("created device \(device.udid) for the health stage")
         do {
             let kept = try keptCandidates(candidates, on: device, options: options)
             try device.delete()
-            return updated(profile, keeping: Set(kept), options: options)
+            return updated(profile, keeping: Set(kept), unchecked: unchecked, ranChecks: true, options: options)
         } catch {
             try? device.delete()
             throw error
@@ -113,14 +115,20 @@ enum HealthStage {
         String(format: "%.1f", ProcessInfo.processInfo.systemUptime - start)
     }
 
-    private static func updated(_ profile: ServiceProfile, keeping kept: Set<String>, options: ProfileOptions) -> ServiceProfile {
+    /// The profile with the candidates the health check kept on marked `keptByHealth`, the ones to switch off that it never had off marked `unchecked`, and what it did recorded.
+    static func updated(_ profile: ServiceProfile, keeping kept: Set<String>, unchecked: Set<String>, ranChecks: Bool, options: ProfileOptions) -> ServiceProfile {
         let services = profile.services.map { entry in
-            kept.contains(entry.label)
-                ? ServiceEntry(
-                    label: entry.label, domain: entry.domain, start: entry.start, ranAtBoot: entry.ranAtBoot,
-                    peakFootprintMB: entry.peakFootprintMB, cpuSeconds: entry.cpuSeconds, disposition: .keptByHealth
-                )
-                : entry
+            let disposition: Disposition = if kept.contains(entry.label) {
+                .keptByHealth
+            } else if unchecked.contains(entry.label), entry.disposition == .disable {
+                .unchecked
+            } else {
+                entry.disposition
+            }
+            return ServiceEntry(
+                label: entry.label, domain: entry.domain, start: entry.start, ranAtBoot: entry.ranAtBoot,
+                peakFootprintMB: entry.peakFootprintMB, cpuSeconds: entry.cpuSeconds, disposition: disposition
+            )
         }
         let method = profile.method
         return ServiceProfile(
@@ -129,7 +137,7 @@ enum HealthStage {
             method: ProfileMethod(
                 costWindowSeconds: method.costWindowSeconds, footprintThresholdMB: method.footprintThresholdMB,
                 cpuThresholdSeconds: method.cpuThresholdSeconds,
-                checks: HealthCheck.checkNames(installing: options.app != nil, testing: options.xctestrun != nil),
+                checks: ranChecks ? HealthCheck.checkNames(installing: options.app != nil, testing: options.xctestrun != nil) : method.checks,
                 keptForInput: Set(options.keep.map(\.rawValue)).sorted()
             ),
             services: services, capabilities: profile.capabilities

@@ -482,7 +482,7 @@ extension ServiceProfiles {
         },
         {
           "cpuSeconds" : 0.35,
-          "disposition" : "disable",
+          "disposition" : "unchecked",
           "domain" : "daemon",
           "label" : "com.apple.akd",
           "peakFootprintMB" : 6.689453125,
@@ -882,7 +882,7 @@ extension ServiceProfiles {
         },
         {
           "cpuSeconds" : 0.2,
-          "disposition" : "disable",
+          "disposition" : "unchecked",
           "domain" : "daemon",
           "label" : "com.apple.cksharingmanagementd",
           "peakFootprintMB" : 5.517578125,
@@ -891,7 +891,7 @@ extension ServiceProfiles {
         },
         {
           "cpuSeconds" : 1.7,
-          "disposition" : "disable",
+          "disposition" : "unchecked",
           "domain" : "daemon",
           "label" : "com.apple.cloudd",
           "peakFootprintMB" : 13,
@@ -1440,7 +1440,7 @@ extension ServiceProfiles {
         },
         {
           "cpuSeconds" : 14.7,
-          "disposition" : "disable",
+          "disposition" : "unchecked",
           "domain" : "daemon",
           "label" : "com.apple.healthappd",
           "peakFootprintMB" : 22,
@@ -2546,7 +2546,7 @@ extension ServiceProfiles {
         },
         {
           "cpuSeconds" : 0.45,
-          "disposition" : "disable",
+          "disposition" : "unchecked",
           "domain" : "daemon",
           "label" : "com.apple.syncdefaultsd",
           "peakFootprintMB" : 6.345703125,
