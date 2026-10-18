@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
+- Added: the iOS 27.0 service profile, the first `ServiceProfiles` bundles: 338 services, 94 switched off, 2 kept on because the device needs them and 5 left on because no trial had them off (`Disposition.unchecked`, the candidates of the capabilities `--keep` kept on for the input app); and a test that each bundled profile file is exactly what `simulator-profile` renders from it.
+- Fixed: a health check whose first boot showed only noise and whose second boot failed outright, to boot, launch or pass the test, counted as healthy; the second boot's hard failures now stand.
+- Added: the README's Simulator services section, with the credit to simslim, whose idea this is and none of whose code or tables ship here.
 - Added: the `simulator-profile` tool, stages 1 to 3: it inventories a runtime, measures what each service costs on a stock boot, then checks, with the candidates off, that the device still boots, reads the override back, installs and launches an app, runs a UI test and keeps its log and respawns quiet, and keeps on any candidate the device needs, comparing each trial with the worst of several stock boots, and counting a log flood or crash only when it recurs on a second boot (`--stage`, `--from`, `--app`, `--bundle-id`, `--xctestrun`, `--only-testing`, `--log-window`, `--max-kept`, `--baselines`, `--candidates`, `--keep`, `--swift`); and `Disposition.infrastructure` with `InfrastructureServices`, the services every app needs, which are never candidates.
 - Added: the `SimulatorServices` library: `SimulatorRuntime`, `RuntimeInventory` (with `LaunchJob`), `Capability`, `ProjectDeclarations`, `ServiceProfile` (with `ServiceProfiles` and `SlimPlan`) and `DisabledServicesOverride`, which read a runtime's launchd jobs, map project capabilities to them and write the per-device disabled-services file a simulator reads at boot.
 - Added: `ProjectDeclarations.backgroundModes` and `unmapped`, the declarations no rule accounts for, and the HealthKit, iCloud and push aliases.

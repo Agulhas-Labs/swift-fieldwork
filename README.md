@@ -11,11 +11,13 @@ It holds what a tool needs to find and talk to the coding agents on a machine (C
 - `Subprocess`: a bounded child-process runner.
 - The lease store: `LeaseStore` and `DeviceLease`, which let one run at a time claim a simulator or device.
 
+A second library, `SimulatorServices`, boots iOS simulators with the system services a project does not need switched off, and the `simulator-profile` tool measures which those are for each simulator runtime (see [Simulator services](#simulator-services)).
+
 Not here yet, and coming in later releases: registering hooks and MCP servers, installing the rule file, writing Cursor's configuration, and a doctor.
 
 ## Status
 
-0.1.0; the API may change before 1.0.
+0.2.0; the API may change before 1.0.
 
 ## Usage
 
@@ -43,22 +45,64 @@ if case let .ask(agents) = selection {
 }
 ```
 
+## Simulator services
+
+`SimulatorServices` boots an iOS simulator *slim*: with the system services a project does not need switched off. A stock iOS 27.0 simulator starts 163 of its runtime's 338 services at boot, and a UI test suite touches few of them; the iOS 27.0 profile switches off 94.
+
+- `ServiceProfiles.profile(forRuntime:)`: the measured profile for a simulator runtime, or nil, in which case boot stock. Profiles ship as Swift source, so a tool that links the library carries them in its binary. iOS 27.0 is the first.
+- `ProjectDeclarations`: what a project declares (entitlement keys, Info.plist keys, background modes, a StoreKit configuration), the `Capability` values those call for, and `unmapped`, the declarations no rule accounts for. While `unmapped` is not empty, boot stock: what those keys need is unknown.
+- `ServiceProfile.plan(keeping:)`: the labels to switch off, less the services of the capabilities kept. The margin is the declaration, not the use: a project that declares HealthKit keeps every HealthKit service on, whether or not a test reaches one.
+- `DisabledServicesOverride`: writes the per-device file the simulator's launchd reads at boot (merged with what is there, written atomically), reads the disabled list back from the booted device, and removes the device's directory once the device is deleted, which `simctl delete` does not.
+
+```swift
+import SimulatorServices
+
+let runtime = "com.apple.CoreSimulator.SimRuntime.iOS-27-0"
+let declarations = try ProjectDeclarations.read(entitlements: entitlementsURL, infoPlist: infoPlistURL, storeKitConfiguration: false)
+if let profile = ServiceProfiles.profile(forRuntime: runtime), declarations.unmapped.isEmpty {
+    let plan = profile.plan(keeping: declarations.capabilities)
+    // After `simctl create`, before `simctl boot`:
+    try DisabledServicesOverride().write(plan.disabled, for: udid)
+}
+// After the boot, check the runtime honoured it:
+let disabled = try DisabledServicesOverride.readBack(udid: udid)
+// After `simctl delete`:
+try DisabledServicesOverride().remove(for: udid)
+```
+
+### Making a profile
+
+`simulator-profile` measures a runtime and writes its profile. It creates its own simulator, deletes it when done (on a signal too), and refuses to run beside another booted simulator, since that would skew the costs it measures. A full run takes 30 to 60 minutes.
+
+```sh
+swift run simulator-profile --runtime com.apple.CoreSimulator.SimRuntime.iOS-27-0 --device-type "iPhone 17" \
+  --app <path/to/App.app> --bundle-id <id> --xctestrun <path/to/Tests.xctestrun> --only-testing <Target/Class/test> \
+  --keep <capability,…> --out profile.json --swift Sources/SimulatorServices/Profiles/iOS27Point0.swift
+```
+
+- **Cost:** a stock boot, then each on-demand service's footprint and CPU over a window (`--window`, 300 s). A service that costs more than the threshold is a candidate for switching off. These are never candidates: services launchd keeps alive or runs at load, and the infrastructure every app needs to install, launch and be tested (`InfrastructureServices`).
+- **Health:** the same device with the candidates off, checked against the worst of several stock boots (`--baselines`, 3): it boots, the runtime reports the services disabled, the app installs and launches, the UI test passes in comparable time, no process floods the log, and nothing crashes and respawns. A log flood or respawn counts only if it recurs on a second boot; any other failure stands. When the check fails, a bisection finds the candidates the device needs and keeps them on (`keptByHealth`). `--keep` keeps the input app's own capabilities on throughout, so their services take no trials and are not kept for everyone as a need the bisection found; the candidates among them are never checked off, so the profile marks them `unchecked` and leaves them on until a run with an input that does not keep them checks them.
+- **Output:** the profile as JSON, and with `--swift`, the Swift source to add to the library; the tool prints the registry line to add to `ServiceProfiles.sources`. Regenerate a profile rather than edit it: a test checks each bundled file is exactly what the tool renders.
+
+The idea of switching simulator services off came from simslim (MIT). None of its code or tables ship here: every profile is measured by this tool.
+
 ## Requirements
 
-A Swift 6.2 toolchain and macOS 13 or later. Foundation only; no dependencies.
+A Swift 6.2 toolchain and macOS 13 or later. Foundation only; no dependencies. `SimulatorServices` and `simulator-profile` also need Xcode with an iOS simulator runtime.
 
 ## Depending on it
 
-Version 0.1.0 is tagged. In `Package.swift`:
+Version 0.2.0 is tagged. In `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.1.0")
+.package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.2.0")
 ```
 
-and in the target that uses it:
+and in the target that uses it, either library or both:
 
 ```swift
-.product(name: "Fieldwork", package: "swift-fieldwork")
+.product(name: "Fieldwork", package: "swift-fieldwork"),
+.product(name: "SimulatorServices", package: "swift-fieldwork"),
 ```
 
 ## Developing
