@@ -11,7 +11,7 @@ It holds what a tool needs to find and talk to the coding agents on a machine (C
 - `Subprocess`: a bounded child-process runner.
 - The lease store: `LeaseStore` and `DeviceLease`, which let one run at a time claim a simulator or device.
 
-A second library, `SimulatorServices`, boots iOS simulators with the system services a project does not need switched off, and the `simulator-profile` tool measures which those are for each simulator runtime (see [Simulator services](#simulator-services)).
+A second library, `SimulatorServices`, boots iOS simulators with the system services a project does not need switched off, and the `simulator-profile` tool measures which those are for each simulator runtime (see [Simulator services](#simulator-services)). A third, `SimulatorAnimations`, builds the library that switches UIKit animations off in an app under test (see [Simulator animations](#simulator-animations)).
 
 Not here yet, and coming in later releases: registering hooks and MCP servers, installing the rule file, writing Cursor's configuration, and a doctor.
 
@@ -86,9 +86,25 @@ swift run simulator-profile --runtime com.apple.CoreSimulator.SimRuntime.iOS-27-
 
 The idea of switching simulator services off came from simslim (MIT). None of its code or tables ship here: every profile is measured by this tool.
 
+## Simulator animations
+
+`SimulatorAnimations` builds a small simulator library that switches UIKit animations off in the app it is inserted into, so UI tests do not wait on them. Insert it with `DYLD_INSERT_LIBRARIES`; it works in the simulator only.
+
+- The consumer names the environment variable (for example `GIZMO_ANIMATIONS`) and the cache directory; the library picks neither. A launch whose environment sets the variable to `on` keeps its animations, and the library sets the variable's name followed by `_LOADED` to `1` in the app, so a test can tell it loaded.
+- `AnimationsOffLibrary.built()` compiles the library for both simulator architectures on first use and returns its file; the file name is a hash of the source and compile command, so a changed variable or flag names a new file. `insertingLibrary(_:into:)` adds it to an existing `DYLD_INSERT_LIBRARIES` value.
+- SwiftUI `withAnimation` animations are not affected.
+
+```swift
+import SimulatorAnimations
+
+let library = try AnimationsOffLibrary(environmentVariable: "GIZMO_ANIMATIONS", directory: cacheDirectory)
+let url = try library.built()
+let inserted = AnimationsOffLibrary.insertingLibrary(url, into: environment["DYLD_INSERT_LIBRARIES"])
+```
+
 ## Requirements
 
-A Swift 6.2 toolchain and macOS 13 or later. Foundation only; no dependencies. `SimulatorServices` and `simulator-profile` also need Xcode with an iOS simulator runtime.
+A Swift 6.2 toolchain and macOS 13 or later. Foundation only; no dependencies. `SimulatorServices`, `SimulatorAnimations` and `simulator-profile` also need Xcode with an iOS simulator runtime.
 
 ## Depending on it
 
@@ -98,11 +114,12 @@ Version 0.2.0 is tagged. In `Package.swift`:
 .package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.2.0")
 ```
 
-and in the target that uses it, either library or both:
+and in the target that uses it, any of the libraries:
 
 ```swift
 .product(name: "Fieldwork", package: "swift-fieldwork"),
 .product(name: "SimulatorServices", package: "swift-fieldwork"),
+.product(name: "SimulatorAnimations", package: "swift-fieldwork"),
 ```
 
 ## Developing
