@@ -3,7 +3,7 @@
 
 import Foundation
 @testable import SimulatorProfiling
-import SimulatorServices
+@testable import SimulatorServices
 import Testing
 
 /// Covers the Swift source written for a profile and the command line flags of the health stage.
@@ -27,50 +27,50 @@ struct ProfileSwiftSourceTests {
 
         extension ServiceProfiles {
             /// The service profile measured on com.apple.CoreSimulator.SimRuntime.iOS-27-0.
-            static let iOS27_0: [String: String] = ["com.apple.CoreSimulator.SimRuntime.iOS-27-0": #\"\"\"
-        {
-          "capabilities" : {
-
-          },
-          "deviceType" : "iPhone 17",
-          "generated" : "2026-01-01",
-          "method" : {
-            "checks" : [
-              "boot"
-            ],
-            "costWindowSeconds" : 30,
-            "cpuThresholdSeconds" : 0.5,
-            "footprintThresholdMB" : 4,
-            "keptForInput" : [
-
-            ]
-          },
-          "profileVersion" : 1,
-          "runtime" : {
-            "build" : "1A1",
-            "identifier" : "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
-            "version" : "27.0"
-          },
-          "schemaVersion" : 1,
-          "services" : [
+            static let iOS27Point0: [String: String] = ["com.apple.CoreSimulator.SimRuntime.iOS-27-0": #\"\"\"
             {
-              "cpuSeconds" : 1,
-              "disposition" : "keptByHealth",
-              "domain" : "daemon",
-              "label" : "a.b",
-              "peakFootprintMB" : 5,
-              "ranAtBoot" : true,
-              "start" : "onDemand"
+              "capabilities" : {
+
+              },
+              "deviceType" : "iPhone 17",
+              "generated" : "2026-01-01",
+              "method" : {
+                "checks" : [
+                  "boot"
+                ],
+                "costWindowSeconds" : 30,
+                "cpuThresholdSeconds" : 0.5,
+                "footprintThresholdMB" : 4,
+                "keptForInput" : [
+
+                ]
+              },
+              "profileVersion" : 1,
+              "runtime" : {
+                "build" : "1A1",
+                "identifier" : "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+                "version" : "27.0"
+              },
+              "schemaVersion" : 1,
+              "services" : [
+                {
+                  "cpuSeconds" : 1,
+                  "disposition" : "keptByHealth",
+                  "domain" : "daemon",
+                  "label" : "a.b",
+                  "peakFootprintMB" : 5,
+                  "ranAtBoot" : true,
+                  "start" : "onDemand"
+                }
+              ]
             }
-          ]
-        }
-        \"\"\"#]
+            \"\"\"#]
         }
 
         """
 
         #expect(try ProfileSwiftSource.render(profile) == expected)
-        #expect(try ProfileSwiftSource.registryLine(profile) == "iOS27_0,")
+        #expect(try ProfileSwiftSource.registryLine(profile) == "iOS27Point0,")
     }
 
     @Test func `the rendered JSON decodes back to the profile`() throws {
@@ -80,9 +80,26 @@ struct ProfileSwiftSourceTests {
     }
 
     @Test func `names come from the runtime identifier`() throws {
-        #expect(try ProfileSwiftSource.name(forRuntime: "com.apple.CoreSimulator.SimRuntime.iOS-27-0") == "iOS27_0")
-        #expect(try ProfileSwiftSource.name(forRuntime: "com.apple.CoreSimulator.SimRuntime.tvOS-26-4-1") == "tvOS26_4_1")
+        #expect(try ProfileSwiftSource.name(forRuntime: "com.apple.CoreSimulator.SimRuntime.iOS-27-0") == "iOS27Point0")
+        #expect(try ProfileSwiftSource.name(forRuntime: "com.apple.CoreSimulator.SimRuntime.tvOS-26-4-1") == "tvOS26Point4Point1")
         #expect(throws: ProfileUsageError.self) { try ProfileSwiftSource.name(forRuntime: "") }
+    }
+
+    @Test func `every bundled profile file is what the generator renders from it`() throws {
+        let directory = URL(filePath: #filePath)
+            .deletingLastPathComponent() // SimulatorProfilingTests
+            .deletingLastPathComponent() // Tests
+            .deletingLastPathComponent() // the repository root
+            .appending(path: "Sources/SimulatorServices/Profiles")
+        let files = try FileManager.default.contentsOfDirectory(atPath: directory.path).filter { $0.hasSuffix(".swift") }.sorted()
+        let identifiers = ServiceProfiles.bundled.keys.sorted()
+
+        #expect(try files == identifiers.map { try "\(ProfileSwiftSource.name(forRuntime: $0)).swift" }.sorted())
+        for identifier in identifiers {
+            let profile = try #require(ServiceProfiles.profile(forRuntime: identifier))
+            let file = try directory.appending(path: "\(ProfileSwiftSource.name(forRuntime: identifier)).swift")
+            #expect(try ProfileSwiftSource.render(profile) == String(contentsOf: file, encoding: .utf8))
+        }
     }
 
     private func parse(_ extra: [String]) throws -> ProfileOptions {

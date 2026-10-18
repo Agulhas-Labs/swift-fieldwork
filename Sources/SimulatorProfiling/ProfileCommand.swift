@@ -84,7 +84,9 @@ public enum ProfileCommand {
         let summary = [Disposition.core, .infrastructure, .disable, .keptByHealth, .belowThreshold, .notRunning].map { "\(counts[$0] ?? 0) \($0.rawValue)" }
         log("wrote \(options.output): \(profile.services.count) services, \(summary.joined(separator: ", "))")
         if let swift = options.swift {
-            try Data(ProfileSwiftSource.render(profile).utf8).write(to: URL(fileURLWithPath: swift))
+            let swiftURL = URL(fileURLWithPath: swift)
+            try FileManager.default.createDirectory(at: swiftURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try Data(ProfileSwiftSource.render(profile).utf8).write(to: swiftURL)
             try log("wrote \(swift); add this line to ServiceProfiles.sources: \(ProfileSwiftSource.registryLine(profile))")
         }
     }

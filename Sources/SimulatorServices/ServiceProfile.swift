@@ -193,6 +193,8 @@ public enum ServiceProfiles {
     /// Runtime identifier to profile JSON text, merged from `sources`.
     static let bundled: [String: String] = sources.reduce(into: [:]) { $0.merge($1) { _, new in new } }
 
-    /// A profile file adds `static let iOS27_0: [String: String] = [...]` in an extension, and registers it by adding its name to this list: the one edit to this file.
-    private static let sources: [[String: String]] = []
+    /// A profile file `iOS27Point0.swift` adds `static let iOS27Point0: [String: String] = [...]` in an extension, and registers it by adding its name to this list: the one edit to this file.
+    private static let sources: [[String: String]] = [
+        iOS27Point0,
+    ]
 }

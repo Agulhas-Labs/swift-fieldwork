@@ -59,7 +59,16 @@ struct ServiceProfileTests {
     }
 
     @Test
-    func noProfileIsBundledYet() {
-        #expect(ServiceProfiles.profile(forRuntime: "com.apple.CoreSimulator.SimRuntime.iOS-27-0") == nil)
+    func theBundledIOS27ProfileDecodesAndSparesTheInfrastructure() throws {
+        let profile = try #require(ServiceProfiles.profile(forRuntime: "com.apple.CoreSimulator.SimRuntime.iOS-27-0"))
+
+        #expect(profile.runtime.identifier == "com.apple.CoreSimulator.SimRuntime.iOS-27-0")
+        #expect(!profile.disabledLabels.isEmpty)
+        #expect(profile.disabledLabels.filter(InfrastructureServices.matches).isEmpty)
+    }
+
+    @Test
+    func aRuntimeWithNoBundledProfileHasNone() {
+        #expect(ServiceProfiles.profile(forRuntime: "com.apple.CoreSimulator.SimRuntime.iOS-26-4") == nil)
     }
 }

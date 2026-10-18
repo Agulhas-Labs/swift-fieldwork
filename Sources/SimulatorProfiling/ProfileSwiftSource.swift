@@ -16,22 +16,22 @@ public enum ProfileSwiftSource {
         return text
     }
 
-    /// The name of the static the source declares for a runtime identifier: `...SimRuntime.iOS-27-0` is `iOS27_0`.
+    /// The name of the static the source declares for a runtime identifier, and of its file: `...SimRuntime.iOS-27-0` is `iOS27Point0`, since the lint allows no underscore in a name.
     public static func name(forRuntime identifier: String) throws -> String {
         let last = identifier.split(separator: ".").last.map(String.init) ?? ""
         let parts = last.split(separator: "-").map(String.init)
-        let name = (parts.first ?? "") + parts.dropFirst().joined(separator: "_")
+        let name = (parts.first ?? "") + parts.dropFirst().joined(separator: "Point")
         guard let first = name.unicodeScalars.first, CharacterSet.letters.contains(first),
-              name.unicodeScalars.allSatisfy({ CharacterSet.alphanumerics.contains($0) || $0 == "_" })
+              name.unicodeScalars.allSatisfy({ CharacterSet.alphanumerics.contains($0) })
         else { throw ProfileUsageError(message: "the runtime identifier \(identifier) does not make a Swift name") }
         return name
     }
 
-    /// The file's text.
+    /// The file's text, indented as the formatter wants it: the raw string's lines sit at the scope's indentation, which its closing delimiter strips again.
     public static func render(_ profile: ServiceProfile) throws -> String {
         let identifier = profile.runtime.identifier
         let name = try name(forRuntime: identifier)
-        let text = try json(profile)
+        let text = try json(profile).split(separator: "\n", omittingEmptySubsequences: false).map { $0.isEmpty ? "" : "    \($0)" }.joined(separator: "\n")
         return """
         // Copyright 2026 Agulhas Labs
         // SPDX-License-Identifier: Apache-2.0
@@ -42,7 +42,7 @@ public enum ProfileSwiftSource {
             /// The service profile measured on \(identifier).
             static let \(name): [String: String] = ["\(identifier)": #\"\"\"
         \(text)
-        \"\"\"#]
+            \"\"\"#]
         }
 
         """
