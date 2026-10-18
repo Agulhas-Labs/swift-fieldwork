@@ -6,7 +6,7 @@ import Foundation
 
 /// A compiled simulator library that switches UIKit animations off in the app it is inserted into, through `DYLD_INSERT_LIBRARIES`.
 ///
-/// The consumer names the environment variable and the cache directory. A launch whose environment sets the variable to `on` keeps its animations, and the library sets the variable's name followed by `_LOADED` to `1` in the app, so a test can tell it loaded. SwiftUI `withAnimation` animations are not affected.
+/// The consumer names the environment variable and the cache directory. A launch whose environment sets the variable to `on` keeps its animations, and the library sets the variable's name followed by `_LOADED` to `1` in the app's environment, so the app can tell it was loaded. SwiftUI `withAnimation` animations are not affected.
 public struct AnimationsOffLibrary: Sendable {
     /// Compiles with an executable and its arguments; the default runs the real compiler.
     public typealias Compile = (_ executable: String, _ arguments: [String]) throws -> Subprocess.Output
@@ -115,11 +115,16 @@ public struct AnimationsOffLibrary: Sendable {
         return library
     }
 
-    /// The FNV-1a 64-bit hash of the source and the compile command, as 16 lowercase hex digits.
+    /// The hash of the source and the compile command that names the file.
     private var hash: String {
         let command = (["/usr/bin/xcrun"] + Self.compileArguments(output: "OUTPUT", sourceFile: "SOURCE")).joined(separator: "\u{1F}")
+        return Self.fnv1a64(source + "\u{1E}" + command)
+    }
+
+    /// The FNV-1a 64-bit hash of `text`'s UTF-8 bytes, as 16 lowercase hex digits.
+    static func fnv1a64(_ text: String) -> String {
         var value: UInt64 = 0xCBF2_9CE4_8422_2325
-        for byte in (source + "\u{1E}" + command).utf8 {
+        for byte in text.utf8 {
             value = (value ^ UInt64(byte)) &* 0x0000_0100_0000_01B3
         }
         let digits = String(value, radix: 16)

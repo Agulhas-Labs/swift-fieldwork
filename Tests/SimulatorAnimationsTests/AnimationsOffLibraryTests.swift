@@ -55,6 +55,40 @@ struct AnimationsOffLibraryTests {
         #expect(try FileManager.default.contentsOfDirectory(atPath: directory.url.path).isEmpty)
     }
 
+    @Test func `a timed-out compile reports the timeout rather than the first line`() throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.remove() }
+        let timeout = "the spawn timed out: xcrun did not finish within 120s and was ended"
+        #expect(throws: AnimationsOffLibraryError.notBuilt(timeout)) {
+            try library(in: directory.url).built { _, _ in
+                Subprocess.Output(succeeded: false, standardOutput: "", standardError: "warning: x\n\(timeout)\n")
+            }
+        }
+    }
+
+    @Test func `a run that loses the rename returns the winner's library`() throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.remove() }
+        let subject = try library(in: directory.url)
+        let built = try subject.built { _, arguments in
+            let output = try #require(arguments.firstIndex(of: "-o").map { arguments[$0 + 1] })
+            try Data("loser".utf8).write(to: URL(fileURLWithPath: output))
+            try Data("winner".utf8).write(to: subject.path)
+            return Subprocess.Output(succeeded: true, standardOutput: "", standardError: "")
+        }
+        #expect(built == subject.path)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: directory.url.path) == [subject.path.lastPathComponent])
+        #expect(try String(contentsOf: subject.path, encoding: .utf8) == "winner")
+    }
+
+    @Test func `the hash is FNV-1a 64 and names the file`() throws {
+        #expect(AnimationsOffLibrary.fnv1a64("") == "cbf29ce484222325")
+        #expect(AnimationsOffLibrary.fnv1a64("a") == "af63dc4c8601ec8c")
+        #expect(AnimationsOffLibrary.fnv1a64("foobar") == "85944171f73967e8")
+        let name = try library(in: URL(fileURLWithPath: "/x")).path.lastPathComponent
+        #expect(name == "animations-c34e4fb26dc7a3fc.dylib")
+    }
+
     @Test func `path creates nothing and the compile builds both architectures`() throws {
         let directory = try TemporaryDirectory()
         defer { directory.remove() }

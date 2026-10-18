@@ -17,7 +17,7 @@ Not here yet, and coming in later releases: registering hooks and MCP servers, i
 
 ## Status
 
-0.2.0; the API may change before 1.0.
+0.3.0; the API may change before 1.0.
 
 ## Usage
 
@@ -90,8 +90,8 @@ The idea of switching simulator services off came from simslim (MIT). None of it
 
 `SimulatorAnimations` builds a small simulator library that switches UIKit animations off in the app it is inserted into, so UI tests do not wait on them. Insert it with `DYLD_INSERT_LIBRARIES`; it works in the simulator only.
 
-- The consumer names the environment variable (for example `GIZMO_ANIMATIONS`) and the cache directory; the library picks neither. A launch whose environment sets the variable to `on` keeps its animations, and the library sets the variable's name followed by `_LOADED` to `1` in the app, so a test can tell it loaded.
-- `AnimationsOffLibrary.built()` compiles the library for both simulator architectures on first use and returns its file; the file name is a hash of the source and compile command, so a changed variable or flag names a new file. `insertingLibrary(_:into:)` adds it to an existing `DYLD_INSERT_LIBRARIES` value.
+- The consumer names the environment variable (for example `GIZMO_ANIMATIONS`) and the cache directory; the library picks neither. A launch whose environment sets the variable to `on` keeps its animations, and the library sets the variable's name followed by `_LOADED` to `1` in the app's environment, so the app can tell it was loaded.
+- `built()` on a library value compiles the library for both simulator architectures on first use and returns its file; the file name is a hash of the source and compile command, so a changed variable or flag names a new file. `insertingLibrary(_:into:)` adds it to an existing `DYLD_INSERT_LIBRARIES` value.
 - SwiftUI `withAnimation` animations are not affected.
 
 ```swift
@@ -104,14 +104,14 @@ let inserted = AnimationsOffLibrary.insertingLibrary(url, into: environment["DYL
 
 ## Requirements
 
-A Swift 6.2 toolchain and macOS 13 or later. Foundation only; no dependencies. `SimulatorServices`, `SimulatorAnimations` and `simulator-profile` also need Xcode with an iOS simulator runtime.
+A Swift 6.2 toolchain and macOS 13 or later. Foundation only; no dependencies. `SimulatorServices` and `simulator-profile` also need Xcode with an iOS simulator runtime, and `SimulatorAnimations` Xcode with the iOS simulator SDK.
 
 ## Depending on it
 
-Version 0.2.0 is tagged. In `Package.swift`:
+Version 0.3.0 is tagged. In `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.2.0")
+.package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.3.0")
 ```
 
 and in the target that uses it, any of the libraries:

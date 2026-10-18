@@ -2,7 +2,7 @@
 
 ## 0.3.0
 
-- Added: the `SimulatorAnimations` library: `AnimationsOffLibrary`, a compiled universal simulator library that switches UIKit animations off in the app it is inserted into, with `init(environmentVariable:directory:)`, `source`, `path`, `built(compile:)`, `compileArguments(output:sourceFile:)`, `minimumIOS` and `insertingLibrary(_:into:)`, and `AnimationsOffLibraryError` (`invalidEnvironmentVariable`, `notBuilt`). The consumer names the environment variable and the cache directory.
+- Added: the `SimulatorAnimations` library: `AnimationsOffLibrary`, a compiled universal simulator library that switches UIKit animations off in the app it is inserted into, with `init(environmentVariable:directory:)`, `source`, `path`, `built(compile:)`, `compileArguments(output:sourceFile:)`, `minimumIOS`, `insertingLibrary(_:into:)` and the `Compile` closure type (which returns `Fieldwork`'s `Subprocess.Output`, so a custom one imports `Fieldwork` too), and `AnimationsOffLibraryError` (`invalidEnvironmentVariable`, `notBuilt`). The consumer names the environment variable and the cache directory.
 
 ## 0.2.0
 
