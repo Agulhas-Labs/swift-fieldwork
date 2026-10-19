@@ -5,15 +5,19 @@ import Foundation
 
 /// The tool this library is working for: the one place a consumer's identity enters.
 public struct FieldworkTool: Equatable, Sendable {
-    /// The tool's name: its binary, its MCP server name, and the word every message uses (`<name> install`).
+    /// The tool's name: its binary, its MCP server name, and the word every message uses.
     public let name: String
 
     /// The subcommands the tool's registered hooks run, which is what ``isMentioned(in:)`` looks for after the program word.
     public let hookSubcommands: [String]
 
-    public init(name: String, hookSubcommands: [String] = []) {
+    /// The command that installs the tool into an agent, as every remedy spells it: `<name> install` unless the tool says otherwise.
+    public let installCommand: String
+
+    public init(name: String, hookSubcommands: [String] = [], installCommand: String? = nil) {
         self.name = name
         self.hookSubcommands = hookSubcommands
+        self.installCommand = installCommand ?? "\(name) install"
     }
 
     /// The name of the tool's rule file under `<claude>/rules/`.

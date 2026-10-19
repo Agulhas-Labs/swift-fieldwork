@@ -43,7 +43,7 @@ public struct DoctorClaude {
     }
 
     private var install: String {
-        "`\(hooks.tool.name) install --agent claude`"
+        "`\(hooks.tool.installCommand) --agent claude`"
     }
 
     /// Every check, in the order the answer lists them.

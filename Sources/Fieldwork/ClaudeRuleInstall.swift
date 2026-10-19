@@ -15,7 +15,7 @@ public struct ClaudeRuleInstall: Equatable, Sendable {
     public let shareDirectory: String
     /// What the rule loads on, as the install line says it: a glob.
     public let loadsOn: String
-    /// The command that copies the rule a package manager ships, as the note on a missing rule names it: `<tool> install` unless the tool calls it something else.
+    /// The command that copies the rule a package manager ships, as the note on a missing rule names it: the tool's own install command unless the tool calls it something else.
     public let installCommand: String
 
     public init(tool: FieldworkTool, shippedFileName: String, shareDirectory: String? = nil, loadsOn: String, installCommand: String? = nil) {
@@ -23,7 +23,7 @@ public struct ClaudeRuleInstall: Equatable, Sendable {
         self.shippedFileName = shippedFileName
         self.shareDirectory = shareDirectory ?? tool.name
         self.loadsOn = loadsOn
-        self.installCommand = installCommand ?? "\(tool.name) install"
+        self.installCommand = installCommand ?? tool.installCommand
     }
 
     /// The rule that ships with the binary at `binary`: beside the file its links lead to (the release bundle), else in `../share/<shareDirectory>` from there (Homebrew's `pkgshare`), else `nil`.

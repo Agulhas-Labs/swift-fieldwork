@@ -39,7 +39,7 @@ public struct DoctorReport {
     /// The verdict line, first in the answer.
     public var verdict: String {
         if nothingInstalled {
-            return "doctor: failed — no agent has \(tool.name) installed; `\(tool.name) install` adds it"
+            return "doctor: failed — no agent has \(tool.name) installed; `\(tool.installCommand)` adds it"
         }
         let outcome = failed.isEmpty ? "passed" : "failed"
         var line = "doctor: \(outcome) — \(failed.count) of \(checks.count) checks failed"
@@ -51,7 +51,7 @@ public struct DoctorReport {
 
     /// The verdict, then one line per check, then one per agent found without the tool, then one per agent skipped.
     public var lines: [String] {
-        let missing = notInstalled.map { "\($0.rawValue): found, \(tool.name) not installed — \(tool.name) install --agent \($0.rawValue) adds it" }
+        let missing = notInstalled.map { "\($0.rawValue): found, \(tool.name) not installed — \(tool.installCommand) --agent \($0.rawValue) adds it" }
         let absent = skipped.map { "\($0.agent.rawValue): not detected, skipped — looked for \($0.lookedFor.joined(separator: ", "))" }
         return [verdict] + checks.map(\.line) + missing + absent
     }

@@ -20,7 +20,7 @@ public struct DoctorRun {
     public func binaryChecks(_ binary: String) -> [DoctorCheck] {
         let version = probe.version(of: binary)
         guard case let .success(registered) = version else {
-            return [.fail(agent, "binary", "\(Self.reason(version)); run `\(probe.tool.name) install --agent \(agent.rawValue)` from the binary you mean to use")]
+            return [.fail(agent, "binary", "\(Self.reason(version)); run `\(probe.tool.installCommand) --agent \(agent.rawValue)` from the binary you mean to use")]
         }
         let running = probe.runningVersion
         let versionCheck = registered == running

@@ -46,9 +46,9 @@ public enum AgentSelection: Equatable, Sendable {
     /// Every agent and the signs it is found by, with the command that installs into it anyway.
     public static func nothingDetectedText(_ detection: AgentDetection, tool: FieldworkTool) -> String {
         let agents = detection.findings.map { finding in
-            "  \(finding.agent.harness), found by \(finding.lookedFor.joined(separator: ", ")): \(tool.name) install --agent \(finding.agent.rawValue)"
+            "  \(finding.agent.harness), found by \(finding.lookedFor.joined(separator: ", ")): \(tool.installCommand) --agent \(finding.agent.rawValue)"
         }
-        return (["No agent found to install into. Name one to install into it anyway:"] + agents + ["Or all three: \(tool.name) install --all"])
+        return (["No agent found to install into. Name one to install into it anyway:"] + agents + ["Or all three: \(tool.installCommand) --all"])
             .joined(separator: "\n")
     }
 
@@ -59,8 +59,8 @@ public enum AgentSelection: Equatable, Sendable {
         let named = detected.map { "--agent \($0.rawValue)" }.joined(separator: " ")
         return [
             detection.text,
-            "Nothing installed: there is no terminal to ask on. To install into what was found: \(tool.name) install --yes",
-            "  or name each one: \(tool.name) install \(named)",
+            "Nothing installed: there is no terminal to ask on. To install into what was found: \(tool.installCommand) --yes",
+            "  or name each one: \(tool.installCommand) \(named)",
         ]
         .joined(separator: "\n")
     }
