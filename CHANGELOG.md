@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added: `Family` (one tool's `install` running the other tools' installs once, after its own: `Family.install(members:caller:flags:environment:besideDirectory:launch:)` over `Family.Member`, finding each on PATH or beside the caller's binary, skipping one not found, returning a `Family.Result` per member that ran, and running nothing where `FIELDWORK_FAMILY_INSTALL` is already set).
+
 ## 0.4.0
 
 - Added: `HookRegistration` (the merge, removal and fingerprint of a tool's hooks in a Claude Code `settings.json`, over a `FieldworkTool` and its events, so two tools can share one file), `HookRegistration.Event`, `HookRegistrationError` and `HookOutput` (the JSON a hook prints for Claude Code).
