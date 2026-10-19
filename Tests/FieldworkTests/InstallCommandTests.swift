@@ -8,8 +8,13 @@ import Testing
 /// A tool whose install verb is not `install`, over a made-up tool, `gizmo`: every remedy names the tool's own command and none falls back to the default spelling.
 struct InstallCommandTests {
     private static let tool = FieldworkTool(name: "gizmo", hookSubcommands: ["stop"], installCommand: "gizmo install-hook")
-    private static let command = "gizmo install-hook"
-    private static let defaultSpelling = "gizmo install --"
+    private static var command: String {
+        "gizmo install-hook"
+    }
+
+    private static var defaultSpelling: String {
+        "gizmo install --"
+    }
 
     private static func detection(_ agents: Set<Agent>) -> AgentDetection {
         let binaries: [Agent: String] = [.claude: "claude", .cursor: "agent", .codex: "codex"]
@@ -96,6 +101,29 @@ struct InstallCommandTests {
     }
 
     @Test
+    func whereClaudeIsNotOnPathTheServerLineNamesTheCommandWithoutSuggestingItAgain() throws {
+        let home = try TemporaryDirectory()
+        defer { home.remove() }
+        let environment = ["HOME": home.url.path, "PATH": "/usr/bin:/bin"]
+        let probe = try DoctorProbe(tool: Self.tool, version: "gizmo 1.0", environment: environment)
+        defer { probe.close() }
+        let doctor = DoctorClaude(
+            environment: environment,
+            probe: probe,
+            hooks: HookRegistration(tool: Self.tool, events: GizmoHooks.events),
+            server: ClaudeMcpServer(tool: Self.tool),
+            expectedTools: ["look"],
+            manualRegistration: "claude mcp add --scope user gizmo -- /opt/gizmo mcp"
+        )
+
+        let config = AgentPaths.claudeConfig(environment: environment).path
+        let check = try #require(doctor.checks().first { $0.name == "server" })
+
+        #expect(check.detail == "no MCP server named gizmo of this tool's in \(config); claude is not on PATH, so `gizmo install-hook` cannot register the server: run `claude mcp add --scope user gizmo -- /opt/gizmo mcp` where claude is")
+        #expect(!check.detail.contains("--agent claude"))
+    }
+
+    @Test
     func aBinaryThatDoesNotRunNamesTheToolsCommand() throws {
         let probe = try DoctorProbe(tool: Self.tool, version: "gizmo 1.0", environment: ["PATH": "/usr/bin:/bin"])
         defer { probe.close() }
@@ -103,6 +131,7 @@ struct InstallCommandTests {
         let checks = DoctorRun(agent: .claude, probe: probe, expectedTools: []).binaryChecks("/nonexistent/gizmo")
 
         let check = try #require(checks.first)
+
         #expect(check.status == .fail)
         #expect(check.detail.contains("run `\(Self.command) --agent claude`"))
         #expect(!check.detail.contains(Self.defaultSpelling))

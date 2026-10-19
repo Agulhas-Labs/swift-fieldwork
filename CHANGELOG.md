@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.0
+
+- Added: `Subprocess.Output.failureReason` is public: what a failed run said, its error before its output, with a `Caused by:` chain after the first line, so a tool's own `codex` or `claude` calls report a failure in the words the library's do.
+- Fixed: where `claude` is not on PATH, `DoctorClaude`'s server line said ``so `<install command> --agent claude` cannot register the server``, which reads as a command to run and would fail again; it names only the install command (``so `<install command>` cannot register the server``), then the `claude mcp add` to run where claude is.
+
 ## 0.6.0
 
 - Added: `FieldworkTool.installCommand` (default `<name> install`), the command every remedy names: the doctor's (`DoctorClaude`, `DoctorRun`, `DoctorReport`), `AgentSelection`'s texts and `ClaudeRuleInstall`'s default `installCommand`, so a tool whose install verb is another (`gizmo install-hook`) is never told to run one that does not exist.

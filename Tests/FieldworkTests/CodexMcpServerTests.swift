@@ -26,6 +26,7 @@ struct CodexMcpServerTests {
     @Test
     func aServerCodexHasNoRecordOfIsAbsent() throws {
         let codex = FakeCodex()
+
         #expect(try Self.gizmo.find(runner: codex, home: Self.home) == .absent)
         #expect(codex.calls == [FakeCodex.Call(arguments: ["mcp", "get", "gizmo", "--json"], home: Self.home.path)])
     }
@@ -33,18 +34,21 @@ struct CodexMcpServerTests {
     @Test
     func theToolsBinaryRunWithMcpIsOursAtAnyPath() throws {
         let codex = FakeCodex(server: ("/opt/bin/gizmo", ["mcp"]))
+
         #expect(try Self.gizmo.find(runner: codex, home: Self.home) == .ours("/opt/bin/gizmo"))
     }
 
     @Test
     func anotherCommandIsForeignAndDescribedAsTyped() throws {
         let codex = FakeCodex(server: ("/usr/bin/other", ["serve", "--fast"]))
+
         #expect(try Self.gizmo.find(runner: codex, home: Self.home) == .foreign("/usr/bin/other serve --fast"))
     }
 
     @Test
     func aSecondToolsServerIsForeignToTheFirst() throws {
         let codex = FakeCodex(server: ("/opt/bin/widget", ["mcp"]))
+
         #expect(try Self.gizmo.find(runner: codex, home: Self.home) == .foreign("/opt/bin/widget mcp"))
         #expect(Self.widget.getArguments == ["mcp", "get", "widget", "--json"])
     }
@@ -53,6 +57,7 @@ struct CodexMcpServerTests {
     func anotherFailureIsRefusedWithItsWholeCauseChain() {
         let codex = FakeCodex(getError: "Error: failed to load configuration\n\nCaused by:\n    login was revoked\n")
         let refusal = #expect(throws: SettingsFile.Refused.self) { try Self.gizmo.find(runner: codex, home: Self.home) }
+
         #expect(refusal?.path == "/scratch/codex-home/config.toml")
         #expect(refusal?.agent == "codex")
         #expect(refusal?.reason == "could not be read by `codex mcp get gizmo --json`: Error: failed to load configuration: login was revoked")
@@ -62,15 +67,7 @@ struct CodexMcpServerTests {
     func outputWithNoTransportIsRefused() {
         let codex = ShownOnly(output: "{\"name\":\"gizmo\"}")
         let refusal = #expect(throws: SettingsFile.Refused.self) { try Self.gizmo.find(runner: codex, home: Self.home) }
+
         #expect(refusal?.reason == "could not be read: `codex mcp get gizmo --json` printed no server transport")
-    }
-}
-
-/// A `codex` whose `mcp get` succeeds and prints exactly `output`.
-private struct ShownOnly: CodexMcpRunner {
-    let output: String
-
-    func run(_: [String], home _: URL) throws -> Subprocess.Output? {
-        Subprocess.Output(succeeded: true, standardOutput: output)
     }
 }

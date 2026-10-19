@@ -23,7 +23,7 @@ Not here yet, and coming in a later release: the Codex install itself, merging t
 
 ## Status
 
-0.6.0; the API may change before 1.0.
+0.7.0; the API may change before 1.0.
 
 ## Usage
 
@@ -114,10 +114,10 @@ A Swift 6.2 toolchain and macOS 13 or later. Foundation only; no dependencies. `
 
 ## Depending on it
 
-Version 0.6.0 is tagged. In `Package.swift`:
+Version 0.7.0 is tagged. In `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.6.0")
+.package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.7.0")
 ```
 
 and in the target that uses it, any of the libraries:

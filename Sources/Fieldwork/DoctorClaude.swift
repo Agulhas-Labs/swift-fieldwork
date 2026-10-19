@@ -74,7 +74,7 @@ public struct DoctorClaude {
         }
         let config = AgentPaths.claudeConfig(environment: environment)
         guard let found = registeredServer(in: config) else {
-            let remedy = manualRegistration.map { "claude is not on PATH, so \(install) cannot register the server: run `\($0)` where claude is" } ?? "run \(install)"
+            let remedy = manualRegistration.map { "claude is not on PATH, so `\(hooks.tool.installCommand)` cannot register the server: run `\($0)` where claude is" } ?? "run \(install)"
             return checks + [.fail(agent, "server", "no MCP server named \(server.name) of this tool's in \(config.path); \(remedy)")]
         }
         checks.append(.pass(agent, "server", "\(server.name) — \(found.command) \(found.arguments.joined(separator: " "))"))

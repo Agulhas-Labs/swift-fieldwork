@@ -33,4 +33,11 @@ struct ConsumerConstructionTests {
         #expect(named.noSourceReason(exists: false) == "no Gizmo.md ships with this binary (install.sh writes it; `gizmo install-hook` from Homebrew or npm copies the Gizmo.md they ship)")
         #expect(unnamed.noSourceReason(exists: true).contains("`gizmo install` from Homebrew"))
     }
+
+    @Test
+    func aFailedRunSaysWhyThroughPublicAPI() {
+        let output = Subprocess.Output(succeeded: false, standardOutput: "", standardError: "Error: failed to load configuration\nCaused by:\nlogin revoked\n")
+
+        #expect(output.failureReason == "Error: failed to load configuration: login revoked")
+    }
 }
