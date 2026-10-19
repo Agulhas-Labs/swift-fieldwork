@@ -12,10 +12,11 @@ It holds what a tool needs to find and talk to the coding agents on a machine (C
 - Claude Code hooks: `HookRegistration` merges a tool's hooks into `settings.json` beside other tools' and removes only its own, and `HookOutput` is the JSON a hook prints back.
 - Claude Code setup: `ClaudeMcpServer` and `ClaudeMcpInstall` register and remove the tool's MCP server through `claude mcp`, and `ClaudeRuleInstall` copies and removes its agent rule.
 - The lease store: `LeaseStore` and `DeviceLease`, which let one run at a time claim a simulator or device.
+- The doctor: `DoctorCheck`, `DoctorReport` (with its `--json` encoding), `DoctorProbe` (runs what an agent would run in a scratch directory, through a launcher the consumer may replace) and `DoctorClaude`, the Claude Code checks.
 
 A second library, `SimulatorServices`, boots iOS simulators with the system services a project does not need switched off, and the `simulator-profile` tool measures which those are for each simulator runtime (see [Simulator services](#simulator-services)). A third, `SimulatorAnimations`, builds the library that switches UIKit animations off in an app under test (see [Simulator animations](#simulator-animations)).
 
-Not here yet, and coming in later releases: writing Cursor's configuration, and a doctor.
+Not here yet, and coming in later releases: writing Cursor's configuration, and the doctor's Cursor and Codex checks.
 
 ## Status
 

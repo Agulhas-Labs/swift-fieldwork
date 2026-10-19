@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added: the doctor's agent-generic core: `DoctorCheck`, `DoctorReport` (verdict, lines and the sorted-keys `--json` encoding), `DoctorProbe` (a scratch-directory runner with an injectable launcher, `--version` and MCP `tools/list` probes), `DoctorRun` and `DoctorClaude`, the Claude Code checks (hooks registered and current, server registered, binary, each hook, the server's tools, the rule), all over the consumer's `FieldworkTool`, `HookRegistration`, `ClaudeMcpServer` and expected tool names.
+
 ## 0.4.0
 
 - Added: `HookRegistration` (the merge, removal and fingerprint of a tool's hooks in a Claude Code `settings.json`, over a `FieldworkTool` and its events, so two tools can share one file), `HookRegistration.Event`, `HookRegistrationError` and `HookOutput` (the JSON a hook prints for Claude Code).
