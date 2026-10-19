@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Added: `Family` (one tool's `install` running the other tools' installs once, after its own: `Family.install(members:caller:flags:environment:besideDirectory:launch:)` over `Family.Member`, finding each on PATH or beside the caller's binary, skipping one not found, returning a `Family.Result` per member that ran, and running nothing where `FIELDWORK_FAMILY_INSTALL` is already set). The default launch, `Family.launchInheritingTerminal`, keeps the member in the caller's process group so its prompt can read the terminal, gives it Ctrl-C while the caller ignores it, and reports a member ended by a signal as `128 +` the signal number.
+- Added: the doctor's agent-generic core: `DoctorCheck`, `DoctorReport` (verdict, lines and the sorted-keys `--json` encoding), `DoctorProbe` (a scratch-directory runner with an injectable launcher, `--version` and MCP `tools/list` probes), `DoctorRun` and `DoctorClaude`, the Claude Code checks (hooks registered and current, server registered, binary, each hook, the server's tools, the rule), all over the consumer's `FieldworkTool`, `HookRegistration`, `ClaudeMcpServer` and expected tool names.
 
 ## 0.4.0
 
