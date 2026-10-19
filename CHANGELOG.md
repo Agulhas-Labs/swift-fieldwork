@@ -3,6 +3,10 @@
 ## 0.3.0
 
 - Added: the `SimulatorAnimations` library: `AnimationsOffLibrary`, a compiled universal simulator library that switches UIKit animations off in the app it is inserted into, with `init(environmentVariable:directory:)`, `source`, `path`, `built(compile:)`, `compileArguments(output:sourceFile:)`, `minimumIOS`, `insertingLibrary(_:into:)` and the `Compile` closure type (which returns `Fieldwork`'s `Subprocess.Output`, so a custom one imports `Fieldwork` too), and `AnimationsOffLibraryError` (`invalidEnvironmentVariable`, `notBuilt`). The consumer names the environment variable and the cache directory.
+## Unreleased
+
+- Added: `HookRegistration` (the merge, removal and fingerprint of a tool's hooks in a Claude Code `settings.json`, over a `FieldworkTool` and its events, so two tools can share one file), `HookRegistration.Event`, `HookRegistrationError` and `HookOutput` (the JSON a hook prints for Claude Code).
+- Added: the Claude Code setup a tool shares: `ClaudeMcpServer` (the server's name, arguments, npm package and removal, user scope alone, or user scope and unscoped, every removal run every time), `ClaudeMcpInstall` (registering it through `claude mcp`, decided from `.claude.json`, and removing it), `ClaudeMcpRunner` and `ClaudeCLI`, `ClaudeRuleInstall` (copying and removing the agent rule) and `ClaudeInstallOutcome`.
 
 ## 0.2.0
 
