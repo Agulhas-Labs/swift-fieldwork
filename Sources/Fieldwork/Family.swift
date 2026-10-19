@@ -13,7 +13,9 @@ public struct Family: Sendable {
 
 public extension Family {
     /// The environment variable a member's install is started with, holding the caller's name; where it is already set, the family step runs nothing.
-    static let environmentVariable = "FIELDWORK_FAMILY_INSTALL"
+    static var environmentVariable: String {
+        "FIELDWORK_FAMILY_INSTALL"
+    }
 
     /// A tool of the family and the arguments that make its binary install.
     struct Member: Equatable, Sendable {
@@ -26,7 +28,9 @@ public extension Family {
             self.installPrefix = installPrefix
         }
 
-        /// The arguments to start this member's install with: the prefix, `--agent <name>` per agent in order, then `--all`, `--yes` and `--dry-run` where set. Tool-specific flags are never passed.
+        /// The arguments to start this member's install with: the prefix, `--agent <name>` per agent in order, then `--all`, `--yes` and `--dry-run` where set.
+        ///
+        /// Tool-specific flags are never passed.
         public func installArguments(for flags: AgentSelection.Flags) -> [String] {
             var arguments = installPrefix
             for agent in flags.agents {
@@ -61,7 +65,9 @@ public extension Family {
         }
     }
 
-    /// Runs a program with the terminal's own streams, waits for it, and returns its exit status; throws where it cannot be launched. Injectable so a test can run fake members.
+    /// Runs a program with the terminal's own streams, waits for it, and returns its exit status; throws where it cannot be launched.
+    ///
+    /// Injectable so a test can run fake members.
     typealias Launch = @Sendable (_ executable: String, _ arguments: [String], _ environment: [String: String]) throws -> Int32
 
     /// Runs the install of every member found, except `caller`, in the order given, and returns one result per member that ran.
@@ -121,8 +127,8 @@ public extension Family {
         let envp = environment.map { strdup("\($0.key)=\($0.value)") } + [nil]
         defer { (argv + envp).forEach { free($0) } }
 
-        TerminalSignals.shared.ignore()
-        defer { TerminalSignals.shared.restore() }
+        terminalSignals.ignore()
+        defer { terminalSignals.restore() }
         var pid: pid_t = 0
         let spawned = posix_spawn(&pid, executable, &actions, &attributes, argv, envp)
         guard spawned == 0 else { throw LaunchFailure(executable: executable, call: "posix_spawn", code: spawned) }
@@ -153,50 +159,6 @@ public extension Family {
     }
 }
 
-/// A launch that could not start its child, or lost track of it: the call that failed and why.
-struct LaunchFailure: Error, CustomStringConvertible {
-    var executable: String
-    var call: String
-    var code: Int32
-
-    var description: String {
-        "\(call) failed for \(executable): \(String(cString: strerror(code))) (errno \(code))"
-    }
-}
-
 private func check(_ code: Int32, _ call: String, _ executable: String) throws {
     guard code == 0 else { throw LaunchFailure(executable: executable, call: call, code: code) }
-}
-
-/// This process's handling of `SIGINT` and `SIGQUIT` while a member runs: ignored from the first launch that starts until the last one running ends, then put back as it was.
-///
-/// Counted so that two launches that overlap cannot leave the process ignoring Ctrl-C: the second would otherwise save the ignored handling the first set, and put it back last.
-private final class TerminalSignals: @unchecked Sendable {
-    static let shared = TerminalSignals()
-
-    private let lock = NSLock()
-    private var running = 0
-    private var savedInterrupt = sigaction()
-    private var savedQuit = sigaction()
-
-    func ignore() {
-        lock.lock()
-        defer { lock.unlock() }
-        running += 1
-        guard running == 1 else { return }
-        var ignored = sigaction()
-        ignored.__sigaction_u.__sa_handler = SIG_IGN
-        sigemptyset(&ignored.sa_mask)
-        sigaction(SIGINT, &ignored, &savedInterrupt)
-        sigaction(SIGQUIT, &ignored, &savedQuit)
-    }
-
-    func restore() {
-        lock.lock()
-        defer { lock.unlock() }
-        running -= 1
-        guard running == 0 else { return }
-        sigaction(SIGINT, &savedInterrupt, nil)
-        sigaction(SIGQUIT, &savedQuit, nil)
-    }
 }

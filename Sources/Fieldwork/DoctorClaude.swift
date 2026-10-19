@@ -91,16 +91,6 @@ public struct DoctorClaude {
         }
     }
 
-    /// A settings file that is there and cannot be read, as the hooks check's line says it.
-    struct Unreadable: Error, CustomStringConvertible {
-        let path: String
-        let reason: String
-
-        var description: String {
-            "claude: nothing written — \(path) could not be read: \(reason)"
-        }
-    }
-
     /// Passes only where the registration is also the one the tool writes, so an upgrade that changed a matcher does not read as healthy.
     private func hooksCheck(missing: [String], found: [String], data: Data?, settings: URL) -> DoctorCheck {
         guard missing.isEmpty else {
@@ -138,11 +128,11 @@ public struct DoctorClaude {
 
     private func ruleCheck(_ rule: ClaudeRuleInstall) -> DoctorCheck {
         let path = AgentPaths.claudeRule(named: rule.tool.installedRuleName, environment: environment)
-        switch PathKind.of(path) {
+        return switch PathKind.of(path) {
         case .file, .symlink:
-            return .pass(agent, "rule", "installed at \(path.path)")
+            .pass(agent, "rule", "installed at \(path.path)")
         case .absent, .directory, .other:
-            return .fail(agent, "rule", "no rule at \(path.path); run \(install)")
+            .fail(agent, "rule", "no rule at \(path.path); run \(install)")
         }
     }
 
@@ -168,5 +158,17 @@ public struct DoctorClaude {
             payload["stop_hook_active"] = false
         }
         return payload
+    }
+}
+
+extension DoctorClaude {
+    /// A settings file that is there and cannot be read, as the hooks check's line says it.
+    struct Unreadable: Error, CustomStringConvertible {
+        let path: String
+        let reason: String
+
+        var description: String {
+            "claude: nothing written — \(path) could not be read: \(reason)"
+        }
     }
 }

@@ -35,6 +35,7 @@ struct FamilyLaunchTests {
         let directory = try TemporaryDirectory()
         defer { directory.remove() }
         let member = try script("kill -INT $$\nexit 0", named: "widget", in: directory.url)
+
         #expect(try Family.launchInheritingTerminal(member, [], environment) == 130)
     }
 
@@ -43,6 +44,7 @@ struct FamilyLaunchTests {
         let directory = try TemporaryDirectory()
         defer { directory.remove() }
         let member = try script("exit 7", named: "widget", in: directory.url)
+
         #expect(try Family.launchInheritingTerminal(member, [], environment) == 7)
     }
 
@@ -55,6 +57,7 @@ struct FamilyLaunchTests {
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path.path)
         let members = [Family.Member(tool: FieldworkTool(name: "gizmo")), Family.Member(tool: FieldworkTool(name: "widget"))]
         let results = Family.install(members: members, caller: FieldworkTool(name: "gizmo"), flags: AgentSelection.Flags(), environment: ["PATH": directory.url.path])
+
         #expect(results.count == 1)
         #expect(results.first?.exitStatus == 127)
         #expect(results.first?.launchFailure?.hasPrefix("posix_spawn failed for ") == true)

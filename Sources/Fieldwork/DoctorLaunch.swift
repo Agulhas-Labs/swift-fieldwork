@@ -4,7 +4,9 @@
 import Foundation
 
 public extension DoctorProbe {
-    /// What a launcher does: runs `binary` with `arguments`, `input` on its stdin and `environment`, and returns its exit status and stdout, or `nil` where it could not be started or was not done within `limit` seconds. Stderr is discarded.
+    /// What a launcher does: runs `binary` with `arguments`, `input` on its stdin and `environment`, and returns its exit status and stdout, or `nil` where it could not be started or was not done within `limit` seconds.
+    ///
+    /// Stderr is discarded.
     typealias Launcher = @Sendable (_ binary: URL, _ arguments: [String], _ input: Data, _ environment: [String: String], _ limit: TimeInterval) -> (status: Int32, output: Data)?
 
     /// What a child of `binary` run with `arguments` wrote to stdout and the status it exited with, given `input` on stdin, or `nil` where it could not be launched or was not done within `limit` seconds.

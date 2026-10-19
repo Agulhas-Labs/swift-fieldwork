@@ -28,6 +28,7 @@ struct DoctorReportTests {
         "notInstalled":["cursor"],"skipped":[{"agent":"codex","lookedFor":["~\\/.codex"]}],"verdict":"failed"}
         """
         let encoded = try report.encoded()
+
         #expect(String(bytes: encoded, encoding: .utf8) == expected)
     }
 

@@ -11,64 +11,6 @@ struct DoctorClaudeTests {
     private static let rule = ClaudeRuleInstall(tool: GizmoHooks.tool, shippedFileName: "gizmo.md", loadsOn: "**/*.swift")
     private static let tools = ["look", "find"]
 
-    /// A scratch home holding a `gizmo` that answers like the real thing, and what an install writes about it.
-    private struct Install {
-        let directory: TemporaryDirectory
-        let binary: String
-
-        var home: URL {
-            directory.url
-        }
-
-        var environment: [String: String] {
-            ["HOME": home.path, "PATH": "/usr/bin:/bin"]
-        }
-
-        var settings: URL {
-            AgentPaths.claudeSettings(environment: environment)
-        }
-
-        init(
-            hooks: [HookRegistration.Event] = GizmoHooks.events,
-            hookBody: String = "cat > /dev/null",
-            listing: [String] = DoctorClaudeTests.tools,
-            registersServer: Bool = true,
-            installsRule: Bool = true
-        ) throws {
-            directory = try TemporaryDirectory()
-            let bin = directory.url.appendingPathComponent("bin", isDirectory: true)
-            try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
-            binary = bin.appendingPathComponent("gizmo").path
-            let names = listing.map { "{\"name\":\"\($0)\"}" }.joined(separator: ",")
-            let script = """
-            #!/bin/sh
-            case "$1" in
-            --version) echo "gizmo 1.0" ;;
-            mcp) cat > /dev/null
-                 printf '%s\\n%s\\n' '{"jsonrpc":"2.0","id":1,"result":{}}' '{"jsonrpc":"2.0","id":2,"result":{"tools":[\(names)]}}' ;;
-            *) \(hookBody) ;;
-            esac
-            """
-            try Data(script.utf8).write(to: URL(fileURLWithPath: binary))
-            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: binary)
-            var data: Data?
-            for event in hooks {
-                data = try GizmoHooks.registration.apply(to: data, command: "\(binary) \(event.subcommand)", event: event).data
-            }
-            try FileManager.default.createDirectory(at: settings.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try data?.write(to: settings)
-            if registersServer {
-                let entry: [String: Any] = ["mcpServers": ["gizmo": ["command": binary, "args": ["mcp"]]]]
-                try JSONSerialization.data(withJSONObject: entry).write(to: AgentPaths.claudeConfig(environment: environment))
-            }
-            if installsRule {
-                let path = AgentPaths.claudeRule(named: "gizmo.md", environment: environment)
-                try FileManager.default.createDirectory(at: path.deletingLastPathComponent(), withIntermediateDirectories: true)
-                try Data("rule\n".utf8).write(to: path)
-            }
-        }
-    }
-
     private static func checks(_ install: Install, server: ClaudeMcpServer = server, limit: TimeInterval = 20, version: String = "gizmo 1.0") throws -> [DoctorCheck] {
         let probe = try DoctorProbe(tool: GizmoHooks.tool, version: version, environment: install.environment, limit: limit)
         defer { probe.close() }
@@ -259,22 +201,62 @@ struct DoctorClaudeTests {
     }
 }
 
-private final class LaunchLog: @unchecked Sendable {
-    struct Call {
+extension DoctorClaudeTests {
+    /// A scratch home holding a `gizmo` that answers like the real thing, and what an install writes about it.
+    private struct Install {
+        let directory: TemporaryDirectory
         let binary: String
-        let arguments: [String]
-        let environment: [String: String]
-        let limit: TimeInterval
-    }
 
-    private let lock = NSLock()
-    private var recorded: [Call] = []
+        var home: URL {
+            directory.url
+        }
 
-    var calls: [Call] {
-        lock.withLock { recorded }
-    }
+        var environment: [String: String] {
+            ["HOME": home.path, "PATH": "/usr/bin:/bin"]
+        }
 
-    func record(binary: String, arguments: [String], environment: [String: String], limit: TimeInterval) {
-        lock.withLock { recorded.append(Call(binary: binary, arguments: arguments, environment: environment, limit: limit)) }
+        var settings: URL {
+            AgentPaths.claudeSettings(environment: environment)
+        }
+
+        init(
+            hooks: [HookRegistration.Event] = GizmoHooks.events,
+            hookBody: String = "cat > /dev/null",
+            listing: [String] = DoctorClaudeTests.tools,
+            registersServer: Bool = true,
+            installsRule: Bool = true
+        ) throws {
+            directory = try TemporaryDirectory()
+            let bin = directory.url.appendingPathComponent("bin", isDirectory: true)
+            try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
+            binary = bin.appendingPathComponent("gizmo").path
+            let names = listing.map { "{\"name\":\"\($0)\"}" }.joined(separator: ",")
+            let script = """
+            #!/bin/sh
+            case "$1" in
+            --version) echo "gizmo 1.0" ;;
+            mcp) cat > /dev/null
+                 printf '%s\\n%s\\n' '{"jsonrpc":"2.0","id":1,"result":{}}' '{"jsonrpc":"2.0","id":2,"result":{"tools":[\(names)]}}' ;;
+            *) \(hookBody) ;;
+            esac
+            """
+            try Data(script.utf8).write(to: URL(fileURLWithPath: binary))
+            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: binary)
+            var data: Data?
+            for event in hooks {
+                data = try GizmoHooks.registration.apply(to: data, command: "\(binary) \(event.subcommand)", event: event).data
+            }
+            try FileManager.default.createDirectory(at: settings.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try data?.write(to: settings)
+            if registersServer {
+                let entry: [String: Any] = ["mcpServers": ["gizmo": ["command": binary, "args": ["mcp"]]]]
+                try JSONSerialization.data(withJSONObject: entry).write(to: AgentPaths.claudeConfig(environment: environment))
+            }
+            if installsRule {
+                let path = AgentPaths.claudeRule(named: "gizmo.md", environment: environment)
+                try FileManager.default.createDirectory(at: path.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try Data("rule\n".utf8).write(to: path)
+            }
+        }
     }
 }

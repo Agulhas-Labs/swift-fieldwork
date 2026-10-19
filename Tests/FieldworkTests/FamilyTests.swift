@@ -27,6 +27,7 @@ struct FamilyTests {
     func argv() {
         let member = Family.Member(tool: widget)
         let all = AgentSelection.Flags(agents: [.codex, .claude], all: true, yes: true, dryRun: true)
+
         #expect(member.installArguments(for: all) == ["install", "--agent", "codex", "--agent", "claude", "--all", "--yes", "--dry-run"])
         #expect(member.installArguments(for: AgentSelection.Flags()) == ["install"])
     }
@@ -38,6 +39,7 @@ struct FamilyTests {
         let log = directory.url.appendingPathComponent("log")
         try fakeWidget(in: directory.url, log: log)
         let results = Family.install(members: members, caller: gizmo, flags: flags, environment: ["PATH": directory.url.path])
+
         #expect(results.count == 1)
         #expect(results.first?.member == "widget")
         #expect(results.first?.exitStatus == 3)
@@ -53,6 +55,7 @@ struct FamilyTests {
         try fakeWidget(in: directory.url, log: log)
         let environment = ["PATH": directory.url.path, "FIELDWORK_FAMILY_INSTALL": "widget"]
         let results = Family.install(members: members, caller: gizmo, flags: flags, environment: environment)
+
         #expect(results.isEmpty)
         #expect(!FileManager.default.fileExists(atPath: log.path))
     }
@@ -66,6 +69,7 @@ struct FamilyTests {
             calls.bump()
             return 0
         }
+
         #expect(results.isEmpty)
         #expect(calls.value == 0)
     }
@@ -80,6 +84,7 @@ struct FamilyTests {
         let log = beside.url.appendingPathComponent("log")
         try fakeWidget(in: beside.url, log: log)
         let results = Family.install(members: members, caller: gizmo, flags: flags, environment: ["PATH": empty.url.path], besideDirectory: beside.url.path)
+
         #expect(results.map(\.member) == ["widget"])
         #expect(try String(contentsOf: log, encoding: .utf8) == "install --agent cursor --yes|gizmo\n")
     }
@@ -111,6 +116,7 @@ struct FamilyTests {
         try fakeWidget(in: onPath.url, log: onPath.url.appendingPathComponent("log"))
         try fakeWidget(in: beside.url, log: beside.url.appendingPathComponent("log"))
         let results = Family.install(members: members, caller: gizmo, flags: flags, environment: ["PATH": onPath.url.path], besideDirectory: beside.url.path) { _, _, _ in 0 }
+
         #expect(results.map(\.executable) == [onPath.url.appendingPathComponent("widget").standardizedFileURL.path])
     }
 
@@ -121,24 +127,9 @@ struct FamilyTests {
         try fakeWidget(in: directory.url, log: directory.url.appendingPathComponent("log"))
         struct Refused: Error {}
         let results = Family.install(members: members, caller: gizmo, flags: flags, environment: ["PATH": directory.url.path]) { _, _, _ in throw Refused() }
+
         #expect(results.count == 1)
         #expect(results.first?.succeeded == false)
         #expect(results.first?.launchFailure != nil)
-    }
-}
-
-private final class Counter: @unchecked Sendable {
-    private let lock = NSLock()
-    private var count = 0
-    func bump() {
-        lock.lock()
-        count += 1
-        lock.unlock()
-    }
-
-    var value: Int {
-        lock.lock()
-        defer { lock.unlock() }
-        return count
     }
 }

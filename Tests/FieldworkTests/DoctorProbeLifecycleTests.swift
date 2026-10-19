@@ -8,17 +8,19 @@ import Testing
 /// What a probe leaves behind: no process from a child stopped at its deadline, and no scratch directory once it is released.
 struct DoctorProbeLifecycleTests {
     /// Every grandchild's command line holds this, so a stray one can be found by it.
-    private static let marker = "fieldwork-doctor-orphan"
+    private static var marker: String {
+        "fieldwork-doctor-orphan"
+    }
 
     /// `script` run by the default launcher with a one-second limit, where it starts a grandchild that writes its pid to `pidFile` and then loops: the launch's answer and the grandchild's pid.
-    private static func launch(_ script: (_ grandchild: String) -> String, pidFile: URL) throws -> (answer: (status: Int32, output: Data)?, grandchild: pid_t) {
+    private static func launch(_ script: (_ grandchild: String) -> String, pidFile: URL, sourceLocation: SourceLocation = #_sourceLocation) throws -> (answer: (status: Int32, output: Data)?, grandchild: pid_t) {
         let loop = "trap '' TERM; echo $$ > \(ShellWord.quoted(pidFile.path)); while :; do sleep 0.2; done"
         let grandchild = "sh -c \(ShellWord.quoted(loop)) \(marker)"
         let started = Date()
         let answer = DoctorProbe.launch(URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", script(grandchild)], within: 1)
-        #expect(Date().timeIntervalSince(started) < 15)
+        #expect(Date().timeIntervalSince(started) < 15, sourceLocation: sourceLocation)
         let text = try String(contentsOf: pidFile, encoding: .utf8)
-        return try (answer, #require(pid_t(text.trimmingCharacters(in: .whitespacesAndNewlines))))
+        return try (answer, #require(pid_t(text.trimmingCharacters(in: .whitespacesAndNewlines)), sourceLocation: sourceLocation))
     }
 
     /// Whether `pid` is gone within two seconds, which an orphan's reaping by launchd takes at most.
