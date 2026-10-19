@@ -46,6 +46,18 @@ public struct DoctorClaude {
         "`\(hooks.tool.installCommand) --agent claude`"
     }
 
+    /// Whether nothing of the tool's is in Claude Code: no hook registered and no server named as the tool's or that is the tool's; a file that cannot be read or parsed is not nothing.
+    public var hasNothingInstalled: Bool {
+        let data: Data?
+        do {
+            data = try SettingsFile.read(AgentPaths.claudeSettings(environment: environment), agent: "claude", flag: "--settings")
+        } catch {
+            return false
+        }
+        return DoctorTraces.hooksHoldNothing(data, tool: hooks.tool)
+            && DoctorTraces.serversHoldNothing(in: AgentPaths.claudeConfig(environment: environment), mcp: CursorMcpFile(server: server))
+    }
+
     /// Every check, in the order the answer lists them.
     public func checks() -> [DoctorCheck] {
         let settings = AgentPaths.claudeSettings(environment: environment)
