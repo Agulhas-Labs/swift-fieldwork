@@ -39,8 +39,8 @@ struct TwoToolsClaudeTests {
         _ = try SettingsFile.rewrite(settings, with: current, original: original, tool: registration.tool)
     }
 
-    private static func commands(_ settings: URL) throws -> [String] {
-        let object = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: settings)) as? [String: Any])
+    private static func commands(_ settings: URL, sourceLocation: SourceLocation = #_sourceLocation) throws -> [String] {
+        let object = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: settings)) as? [String: Any], sourceLocation: sourceLocation)
         let hooks = object["hooks"] as? [String: Any] ?? [:]
         return hooks.values
             .flatMap { $0 as? [[String: Any]] ?? [] }

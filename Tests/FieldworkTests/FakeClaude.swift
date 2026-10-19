@@ -14,7 +14,9 @@ final class FakeClaude: ClaudeMcpRunner, @unchecked Sendable {
     private let addSucceeds: Bool
     /// Whether a successful `add` writes the server into the config at all.
     private let addWrites: Bool
-    /// Whether each `remove`, in the order they arrive, succeeds; a run past the end succeeds. A failed one leaves the config as it was.
+    /// Whether each `remove`, in the order they arrive, succeeds; a run past the end succeeds.
+    ///
+    /// A failed one leaves the config as it was.
     private let removeResults: [Bool]
     private var removeCount = 0
     private var recorded: [[String]] = []

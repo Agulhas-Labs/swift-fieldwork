@@ -7,7 +7,10 @@ import Testing
 
 /// The Claude Code MCP registration a tool's install makes: decided from `.claude.json`, made through `claude mcp` with exact arguments, and never over a foreign server.
 struct ClaudeMcpInstallTests {
-    private static let binary = "/opt/tools/bin/gizmo"
+    private static var binary: String {
+        "/opt/tools/bin/gizmo"
+    }
+
     private static let install = ClaudeMcpInstall(server: ClaudeMcpServer(tool: FieldworkTool(name: "gizmo")))
 
     private static func config(in directory: TemporaryDirectory, holding gizmo: [String: Any]?) throws -> URL {

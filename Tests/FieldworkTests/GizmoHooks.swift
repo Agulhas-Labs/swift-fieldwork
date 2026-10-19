@@ -4,7 +4,7 @@
 @testable import Fieldwork
 
 /// The hooks of a made-up tool, `gizmo`, for the tests of ``HookRegistration``: the events a consumer would pass as values.
-enum GizmoHooks {
+struct GizmoHooks {
     static let tool = FieldworkTool(name: "gizmo", hookSubcommands: ["session-start", "pre-tool-use", "post-tool-use", "stop"])
 
     static let sessionStart = HookRegistration.Event(

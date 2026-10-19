@@ -7,7 +7,10 @@ import Testing
 
 /// A Claude Code config that is there and cannot be read as a JSON object is refused and named, never read as holding no server.
 struct ClaudeMcpUnreadableConfigTests {
-    private static let binary = "/opt/tools/bin/gizmo"
+    private static var binary: String {
+        "/opt/tools/bin/gizmo"
+    }
+
     private static let install = ClaudeMcpInstall(server: ClaudeMcpServer(tool: FieldworkTool(name: "gizmo")))
 
     @Test

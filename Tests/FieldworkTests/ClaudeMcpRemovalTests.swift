@@ -7,7 +7,10 @@ import Testing
 
 /// Taking a tool's server out through `claude mcp remove`: every removal the server lists runs, in order, and the removal worked if any did.
 struct ClaudeMcpRemovalTests {
-    private static let binary = "/opt/tools/bin/gizmo"
+    private static var binary: String {
+        "/opt/tools/bin/gizmo"
+    }
+
     private static let user = ["mcp", "remove", "gizmo", "--scope", "user"]
     private static let unscoped = ["mcp", "remove", "gizmo"]
     private static let both = ClaudeMcpInstall(server: ClaudeMcpServer(tool: FieldworkTool(name: "gizmo"), removal: .userScopeAndUnscoped))
