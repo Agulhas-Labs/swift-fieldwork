@@ -13,6 +13,9 @@ final class TerminalSignals: @unchecked Sendable {
     private var savedInterrupt = sigaction()
     private var savedQuit = sigaction()
 
+    /// Only ``terminalSignals`` makes one: a second instance would save the handling the first had set to ignored, and put that back last.
+    fileprivate init() {}
+
     func ignore() {
         lock.lock()
         defer { lock.unlock() }
