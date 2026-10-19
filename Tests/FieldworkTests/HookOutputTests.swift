@@ -25,6 +25,17 @@ struct HookOutputTests {
         #expect(specific["additionalContext"] as? String == "primer text")
     }
 
+    /// A failed call's hook answers under the event that fired, so Claude Code routes the context to the model.
+    @Test(arguments: [("PostToolUse", nil), ("PostToolUseFailure", "PostToolUseFailure")] as [(String, String?)])
+    func aPostToolUseContextNamesTheEventThatFired(expected: String, event: String?) throws {
+        let rendered = try #require(event.map { HookOutput.postToolUseContext("a note", event: $0) } ?? HookOutput.postToolUseContext("a note"))
+        let object = try #require(JSONSerialization.jsonObject(with: Data(rendered.utf8)) as? [String: Any])
+        let specific = try #require(object["hookSpecificOutput"] as? [String: Any])
+
+        #expect(specific["hookEventName"] as? String == expected)
+        #expect(specific["additionalContext"] as? String == "a note")
+    }
+
     /// Run by hand, or by a hook event this does not know, the readable form is the right answer.
     @Test
     func anAbsentOrUnknownEventFallsBackToPlainText() {

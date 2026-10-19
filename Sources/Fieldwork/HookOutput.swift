@@ -100,11 +100,11 @@ public struct HookOutput {
         return String(bytes: data, encoding: .utf8)
     }
 
-    /// What to print so a `PostToolUse` hook hands `context` to the model, or `nil` if it cannot be encoded.
+    /// What to print so a `PostToolUse` hook, or the `event` that stands in for it, hands `context` to the model, or `nil` if it cannot be encoded.
     ///
-    /// The JSON envelope and not plain text: a `PostToolUse` hook's plain stdout reaches the transcript view, never the model.
-    public static func postToolUseContext(_ context: String) -> String? {
-        additionalContext(context, event: "PostToolUse")
+    /// The JSON envelope and not plain text: a `PostToolUse` hook's plain stdout reaches the transcript view, never the model. A call that failed fires `PostToolUseFailure` instead, whose envelope names that event.
+    public static func postToolUseContext(_ context: String, event: String = "PostToolUse") -> String? {
+        additionalContext(context, event: event)
     }
 
     /// What to print so a `PostToolUse` hook blocks on the edit just made, handing `reason` to the model as feedback on it, or `nil` if it cannot be encoded.
