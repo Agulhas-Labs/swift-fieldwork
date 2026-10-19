@@ -4,7 +4,7 @@ The agent-setup layer shared by the Fieldwork tools: [sift](https://github.com/A
 
 It holds what a tool needs to find and talk to the coding agents on a machine (Claude Code, Cursor and Codex) and to share a device between runs. The tool supplies its own identity as values; the package carries none.
 
-- `FieldworkTool`: the consumer's identity (its name and hook subcommands), and the recognition of a registered shell command as its own.
+- `FieldworkTool`: the consumer's identity (its name, hook subcommands and the install command every remedy names), and the recognition of a registered shell command as its own.
 - `AgentPaths`: where Claude Code, Cursor and Codex keep their configuration, resolved from the environment.
 - Detection, selection and the prompt: `AgentDetection` finds the agents, `AgentSelection` decides which to install into, `InstallPrompt` asks, and `InstallStepReport` and `InstallSummary` report what each step did.
 - `Family`: runs the other Fieldwork tools' installs from one tool's `install`, once, with the same agent flags.
@@ -14,15 +14,16 @@ It holds what a tool needs to find and talk to the coding agents on a machine (C
 - Claude Code setup: `ClaudeMcpServer` and `ClaudeMcpInstall` register and remove the tool's MCP server through `claude mcp`, and `ClaudeRuleInstall` copies and removes its agent rule.
 - Cursor setup: `CursorMcpFile` and `CursorHooksFile` merge the tool's server into `mcp.json` and its hooks into `hooks.json` beside other tools', and `CursorInstall`, `CursorHookInstaller` and `CursorInstallStep` write both; `CursorHookPayload`, `CursorPreToolUse`, `CursorPostToolUse`, `CursorSessionStart` and `CursorHookOutput` read a Cursor hook payload as the Claude Code one the tool's hook judges and write its answer back in Cursor's schema.
 - The lease store: `LeaseStore` and `DeviceLease`, which let one run at a time claim a simulator or device.
-- The doctor: `DoctorCheck`, `DoctorReport` (with its `--json` encoding), `DoctorProbe` (runs what an agent would run in a scratch directory, through a launcher the consumer may replace) and `DoctorClaude`, the Claude Code checks.
+- The doctor: `DoctorCheck`, `DoctorReport` (with its `--json` encoding), `DoctorProbe` (runs what an agent would run in a scratch directory, through a launcher the consumer may replace), and one check per agent: `DoctorClaude`, `DoctorCursor` and `DoctorCodex`, each of which also says whether nothing of the tool's is installed there.
+- Codex's MCP lookup: `CodexMcpServer` reads and changes the tool's server through `codex mcp`, run by a `CodexMcpRunner` (`CodexCLI` runs the real one).
 
 A second library, `SimulatorServices`, boots iOS simulators with the system services a project does not need switched off, and the `simulator-profile` tool measures which those are for each simulator runtime (see [Simulator services](#simulator-services)). A third, `SimulatorAnimations`, builds the library that switches UIKit animations off in an app under test (see [Simulator animations](#simulator-animations)).
 
-Not here yet, and coming in later releases: the doctor's Cursor and Codex checks.
+Not here yet, and coming in a later release: the Codex install itself, merging the tool's hooks into Codex's `hooks.json`.
 
 ## Status
 
-0.5.0; the API may change before 1.0.
+0.6.0; the API may change before 1.0.
 
 ## Usage
 
@@ -113,10 +114,10 @@ A Swift 6.2 toolchain and macOS 13 or later. Foundation only; no dependencies. `
 
 ## Depending on it
 
-Version 0.5.0 is tagged. In `Package.swift`:
+Version 0.6.0 is tagged. In `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.5.0")
+.package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.6.0")
 ```
 
 and in the target that uses it, any of the libraries:

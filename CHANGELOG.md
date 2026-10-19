@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0
+
+- Added: `FieldworkTool.installCommand` (default `<name> install`), the command every remedy names: the doctor's (`DoctorClaude`, `DoctorRun`, `DoctorReport`), `AgentSelection`'s texts and `ClaudeRuleInstall`'s default `installCommand`, so a tool whose install verb is another (`gizmo install-hook`) is never told to run one that does not exist.
+- Added: the doctor's Cursor check, `DoctorCursor` (`init(directory:probe:install:expectedTools:)`, over the tool's `CursorInstall`): the hooks in `hooks.json`, the server in `mcp.json`, the registered binary and its version, each hook fed a payload of Cursor's shape, and the server's tool list.
+- Added: the doctor's Codex check, `DoctorCodex` (`init(home:runner:probe:hooks:server:expectedTools:)`, with the tool's Codex events as a `HookRegistration`): the hooks in `hooks.json` and how many of them `config.toml` records a trust for, the server `codex mcp get` shows, the binary and its version, each hook and the server's tool list. With it, the `codex mcp` lookup it uses: `CodexMcpRunner`, `CodexCLI` and `CodexMcpServer` (`getArguments`, `addArguments(binary:)`, `removeArguments` and `find(runner:home:)`, answering a `CodexMcpServer.Found`), over the tool's `ClaudeMcpServer`.
+- Added: `hasNothingInstalled` on `DoctorClaude`, `DoctorCursor` and `DoctorCodex`: whether nothing of the tool's is in that agent (each file absent, or readable, parseable and free of the tool's hooks and server), so a doctor can name an agent found without the tool rather than fail it. A file that cannot be read or parsed is not nothing.
+
 ## 0.5.0
 
 - Added: `Family` (one tool's `install` running the other tools' installs once, after its own: `Family.install(members:caller:flags:environment:besideDirectory:launch:)` over `Family.Member`, finding each on PATH or beside the caller's binary, skipping one not found, returning a `Family.Result` per member that ran, and running nothing where `FIELDWORK_FAMILY_INSTALL` is already set). The default launch, `Family.launchInheritingTerminal`, keeps the member in the caller's process group so its prompt can read the terminal, gives it Ctrl-C while the caller ignores it, and reports a member ended by a signal as `128 +` the signal number.
