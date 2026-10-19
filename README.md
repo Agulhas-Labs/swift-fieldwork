@@ -7,6 +7,7 @@ It holds what a tool needs to find and talk to the coding agents on a machine (C
 - `FieldworkTool`: the consumer's identity (its name and hook subcommands), and the recognition of a registered shell command as its own.
 - `AgentPaths`: where Claude Code, Cursor and Codex keep their configuration, resolved from the environment.
 - Detection, selection and the prompt: `AgentDetection` finds the agents, `AgentSelection` decides which to install into, `InstallPrompt` asks, and `InstallStepReport` and `InstallSummary` report what each step did.
+- `Family`: runs the other Fieldwork tools' installs from one tool's `install`, once, with the same agent flags.
 - Settings files with their backups: `SettingsFile` and `SettingsBackupFile`.
 - `Subprocess`: a bounded child-process runner.
 - Claude Code hooks: `HookRegistration` merges a tool's hooks into `settings.json` beside other tools' and removes only its own, and `HookOutput` is the JSON a hook prints back.

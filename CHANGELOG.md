@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added: `Family` (one tool's `install` running the other tools' installs once, after its own: `Family.install(members:caller:flags:environment:besideDirectory:launch:)` over `Family.Member`, finding each on PATH or beside the caller's binary, skipping one not found, returning a `Family.Result` per member that ran, and running nothing where `FIELDWORK_FAMILY_INSTALL` is already set). The default launch, `Family.launchInheritingTerminal`, keeps the member in the caller's process group so its prompt can read the terminal, gives it Ctrl-C while the caller ignores it, and reports a member ended by a signal as `128 +` the signal number.
+
 ## 0.4.0
 
 - Added: `HookRegistration` (the merge, removal and fingerprint of a tool's hooks in a Claude Code `settings.json`, over a `FieldworkTool` and its events, so two tools can share one file), `HookRegistration.Event`, `HookRegistrationError` and `HookOutput` (the JSON a hook prints for Claude Code).
