@@ -142,5 +142,12 @@ public extension CursorHooksFile {
         public let replaced: [String]
         /// One `<event> — <command>` per entry taken out.
         public let removed: [String]
+
+        public init(data: Data, changed: Bool, replaced: [String], removed: [String]) {
+            self.data = data
+            self.changed = changed
+            self.replaced = replaced
+            self.removed = removed
+        }
     }
 }

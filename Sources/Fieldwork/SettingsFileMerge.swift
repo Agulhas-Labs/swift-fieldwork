@@ -47,6 +47,12 @@ public extension SettingsFile {
         /// The harness the file configures, as the refusal's first word.
         public let agent: String
 
+        public init(path: String, reason: String, agent: String) {
+            self.path = path
+            self.reason = reason
+            self.agent = agent
+        }
+
         public var description: String {
             "\(agent): nothing written — \(path) \(reason)"
         }

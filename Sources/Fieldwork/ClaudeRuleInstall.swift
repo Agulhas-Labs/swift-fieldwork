@@ -15,12 +15,15 @@ public struct ClaudeRuleInstall: Equatable, Sendable {
     public let shareDirectory: String
     /// What the rule loads on, as the install line says it: a glob.
     public let loadsOn: String
+    /// The command that copies the rule a package manager ships, as the note on a missing rule names it: `<tool> install` unless the tool calls it something else.
+    public let installCommand: String
 
-    public init(tool: FieldworkTool, shippedFileName: String, shareDirectory: String? = nil, loadsOn: String) {
+    public init(tool: FieldworkTool, shippedFileName: String, shareDirectory: String? = nil, loadsOn: String, installCommand: String? = nil) {
         self.tool = tool
         self.shippedFileName = shippedFileName
         self.shareDirectory = shareDirectory ?? tool.name
         self.loadsOn = loadsOn
+        self.installCommand = installCommand ?? "\(tool.name) install"
     }
 
     /// The rule that ships with the binary at `binary`: beside the file its links lead to (the release bundle), else in `../share/<shareDirectory>` from there (Homebrew's `pkgshare`), else `nil`.
@@ -48,9 +51,9 @@ public struct ClaudeRuleInstall: Equatable, Sendable {
         }
     }
 
-    /// Why nothing is done where no rule ships beside the binary, for a rule at the destination that is already there (`exists`) or not: `install.sh` writes the rule, and the tool's `install` from Homebrew or npm copies the one they ship, so a rule installed that way is left as it is.
+    /// Why nothing is done where no rule ships beside the binary, for a rule at the destination that is already there (`exists`) or not: `install.sh` writes the rule, and the tool's ``installCommand`` from Homebrew or npm copies the one they ship, so a rule installed that way is left as it is.
     public func noSourceReason(exists: Bool) -> String {
-        let installer = "(install.sh writes it; `\(tool.name) install` from Homebrew or npm copies the \(shippedFileName) they ship)"
+        let installer = "(install.sh writes it; `\(installCommand)` from Homebrew or npm copies the \(shippedFileName) they ship)"
         return exists ? "no \(shippedFileName) ships beside this binary to refresh it from \(installer)" : "no \(shippedFileName) ships with this binary \(installer)"
     }
 
