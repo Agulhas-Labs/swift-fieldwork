@@ -4,3 +4,5 @@
 #
 # Format: `<uuid> <reason>`, one per line, matched case-insensitively. `#` starts a comment only at the
 # start of a line; an entry holding whitespace then `#` is refused.
+00000000-0000-4000-8000-000000000001 made by hand: the Cursor hook fixture's conversation and session id
+00000000-0000-4000-8000-000000000002 made by hand: the Cursor hook fixture's generation id

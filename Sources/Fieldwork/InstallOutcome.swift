@@ -3,8 +3,8 @@
 
 import Foundation
 
-/// What a Claude Code install step did: the lines it printed, what it left alone, the files it rewrote, and what it set out to do and could not.
-public struct ClaudeInstallOutcome: Equatable, Sendable {
+/// What an install step did, for any agent: the registration lines, what it left alone, the files it rewrote, and what it set out to do and could not.
+public struct InstallOutcome: Equatable, Sendable {
     /// One line per registration made, repointed, found already in place or taken out.
     public var lines: [String]
     /// What was left alone and why, and any backup that could not be kept.
@@ -26,3 +26,6 @@ public struct ClaudeInstallOutcome: Equatable, Sendable {
         !written.isEmpty
     }
 }
+
+/// The 0.4.0 name of ``InstallOutcome``.
+public typealias ClaudeInstallOutcome = InstallOutcome

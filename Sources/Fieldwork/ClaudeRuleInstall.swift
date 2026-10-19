@@ -55,8 +55,8 @@ public struct ClaudeRuleInstall: Equatable, Sendable {
     }
 
     /// Copies `source` to `destination` as ``plan(source:destination:)`` says, keeping a differing rule beside it first.
-    public func install(source: URL?, destination: URL) throws -> ClaudeInstallOutcome {
-        var outcome = ClaudeInstallOutcome()
+    public func install(source: URL?, destination: URL) throws -> InstallOutcome {
+        var outcome = InstallOutcome()
         let path = destination.path
         switch plan(source: source, destination: destination) {
         case .noSource:
@@ -93,8 +93,8 @@ public struct ClaudeRuleInstall: Equatable, Sendable {
     /// Deletes the rule at `destination` that the install copied in, or leaves a symlink where it is, as the install does: a link means the rule is a checkout's own file, which the install never wrote.
     ///
     /// Only the file at `destination` is touched, so another tool's rule beside it stays; nothing is said where there is nothing there.
-    public func uninstall(destination: URL) -> ClaudeInstallOutcome {
-        var outcome = ClaudeInstallOutcome()
+    public func uninstall(destination: URL) -> InstallOutcome {
+        var outcome = InstallOutcome()
         let path = destination.path
         switch PathKind.of(destination) {
         case .absent:

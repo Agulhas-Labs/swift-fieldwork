@@ -25,8 +25,8 @@ public struct ClaudeMcpInstall: Equatable, Sendable {
     }
 
     /// Registers `binary` in `config` through `runner`, unless it is already there or a foreign server holds the name, and reads the config back to confirm it.
-    public func install(config: URL, binary: String, runner: any ClaudeMcpRunner) throws -> ClaudeInstallOutcome {
-        var outcome = ClaudeInstallOutcome()
+    public func install(config: URL, binary: String, runner: any ClaudeMcpRunner) throws -> InstallOutcome {
+        var outcome = InstallOutcome()
         let manual = server.manual(binary: binary)
         let registered = server.registered(binary: binary)
         let name = server.name
@@ -92,8 +92,8 @@ public struct ClaudeMcpInstall: Equatable, Sendable {
     /// Removes the server named by this install, by name and without reading the config, through `runner`: reports what happened and never throws for a `claude` failure.
     ///
     /// Every removal the server lists runs; the line says it was removed when any did, and a failure is reported only when all failed.
-    public func uninstall(runner: any ClaudeMcpRunner) -> ClaudeInstallOutcome {
-        var outcome = ClaudeInstallOutcome()
+    public func uninstall(runner: any ClaudeMcpRunner) -> InstallOutcome {
+        var outcome = InstallOutcome()
         let command = server.removalCommand
         let removed: Subprocess.Output?
         do {
