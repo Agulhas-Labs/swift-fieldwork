@@ -84,6 +84,36 @@ struct FamilyTests {
         #expect(try String(contentsOf: log, encoding: .utf8) == "install --agent cursor --yes|gizmo\n")
     }
 
+    @Test("found members run in the order given")
+    func order() throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.remove() }
+        for name in ["widget", "gadget"] {
+            let path = directory.url.appendingPathComponent(name)
+            try "#!/bin/sh\nexit 0\n".write(to: path, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path.path)
+        }
+        let gadget = Family.Member(tool: FieldworkTool(name: "gadget"))
+        let environment = ["PATH": directory.url.path]
+        let forward = Family.install(members: [Family.Member(tool: gizmo), Family.Member(tool: widget), gadget], caller: gizmo, flags: flags, environment: environment) { _, _, _ in 0 }
+        #expect(forward.map(\.member) == ["widget", "gadget"])
+        let backward = Family.install(members: [gadget, Family.Member(tool: gizmo), Family.Member(tool: widget)], caller: gizmo, flags: flags, environment: environment) { _, _, _ in 0 }
+        #expect(backward.map(\.member) == ["gadget", "widget"])
+    }
+
+    @Test("a member on PATH and beside the binary runs from PATH")
+    func pathWins() throws {
+        let onPath = try TemporaryDirectory()
+        let beside = try TemporaryDirectory()
+        defer { onPath.remove()
+            beside.remove()
+        }
+        try fakeWidget(in: onPath.url, log: onPath.url.appendingPathComponent("log"))
+        try fakeWidget(in: beside.url, log: beside.url.appendingPathComponent("log"))
+        let results = Family.install(members: members, caller: gizmo, flags: flags, environment: ["PATH": onPath.url.path], besideDirectory: beside.url.path) { _, _, _ in 0 }
+        #expect(results.map(\.executable) == [onPath.url.appendingPathComponent("widget").standardizedFileURL.path])
+    }
+
     @Test("a member that cannot launch is a returned failure")
     func launchFailure() throws {
         let directory = try TemporaryDirectory()
