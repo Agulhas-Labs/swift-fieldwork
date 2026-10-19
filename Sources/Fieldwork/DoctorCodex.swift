@@ -43,7 +43,7 @@ public struct DoctorCodex {
         } catch {
             return false
         }
-        guard DoctorTraces.hooksHoldNothing(data, tool: hooks.tool), case .absent? = try? server.find(runner: runner, home: home.directory) else { return false }
+        guard DoctorTraces.hooksHoldNothing(data, tool: hooks.tool, subcommands: hooks.events.map(\.subcommand)), case .absent? = try? server.find(runner: runner, home: home.directory) else { return false }
         return true
     }
 
@@ -58,7 +58,7 @@ public struct DoctorCodex {
             checks.append(hooksCheck(missing: missing, found: registered.map(\.event), file: file))
         } catch {
             registered = []
-            checks.append(.fail(agent, "hooks", Self.describe(error)))
+            checks.append(.fail(agent, "hooks", DoctorTraces.describe(error)))
         }
         if !registered.isEmpty {
             checks.append(DoctorCodexTrust.check(config: home.directory.appendingPathComponent(AgentPaths.codexConfigFileName), hooks: file, positions: registered.map(\.position), tool: server.server.name))
@@ -117,7 +117,7 @@ public struct DoctorCodex {
         do {
             found = try server.find(runner: runner, home: home.directory)
         } catch {
-            return (.unknown(agent, "server", "\(asked) did not answer: \(Self.describe(error)); binary, version and mcp server not checked"), nil)
+            return (.unknown(agent, "server", "\(asked) did not answer: \(DoctorTraces.describe(error)); binary, version and mcp server not checked"), nil)
         }
         return switch found {
         case let .ours(binary):
@@ -129,14 +129,6 @@ public struct DoctorCodex {
         case .noCodex:
             (.unknown(agent, "server", "`codex` is not on PATH to ask \(asked); binary, version and mcp server not checked"), nil)
         }
-    }
-
-    /// A refusal as the path and why, without the install's "nothing written".
-    private static func describe(_ error: any Error) -> String {
-        if let refused = error as? SettingsFile.Refused {
-            return "\(refused.path) \(refused.reason)"
-        }
-        return String(describing: error)
     }
 }
 

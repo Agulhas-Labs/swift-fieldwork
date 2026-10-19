@@ -242,6 +242,65 @@ struct DoctorCodexTests {
         #expect(try !Self.hasNothing(scratch, FakeCodex()))
     }
 
+    @Test
+    func aCodexThatIsNotOnPathLeavesAHomeWithoutHooksWithSomething() throws {
+        let scratch = try Scratch(hooks: false)
+        defer { scratch.directory.remove() }
+
+        #expect(try !Self.hasNothing(scratch, FakeCodex(present: false)))
+    }
+
+    @Test
+    func aCodexThatRefusesToAnswerLeavesAHomeWithoutHooksWithSomething() throws {
+        let scratch = try Scratch(hooks: false)
+        defer { scratch.directory.remove() }
+
+        #expect(try !Self.hasNothing(scratch, FakeCodex(getError: "Error: failed to parse config.toml")))
+    }
+
+    @Test
+    func theHookTheRegistrationRecognisesIsSomethingEvenWhenTheToolListsNoSubcommands() throws {
+        let scratch = try Scratch()
+        defer { scratch.directory.remove() }
+        let tool = FieldworkTool(name: "gizmo")
+        let probe = try DoctorProbe(tool: tool, version: "gizmo 1.0", environment: [:])
+        defer { probe.close() }
+        let doctor = DoctorCodex(
+            home: AgentPaths.codexHome(flag: nil, environment: scratch.environment),
+            runner: FakeCodex(),
+            probe: probe,
+            hooks: HookRegistration(tool: tool, events: Self.events),
+            server: CodexMcpServer(server: ClaudeMcpServer(tool: tool)),
+            expectedTools: Self.tools
+        )
+
+        #expect(try doctor.registeredHooks(in: Data(contentsOf: scratch.codexHome.appendingPathComponent("hooks.json"))).count == 3)
+        #expect(!doctor.hasNothingInstalled)
+    }
+
+    @Test
+    func trustIsFoundInAHomeWhoseNameHoldsAColon() throws {
+        let scratch = try Scratch(hooks: false)
+        defer { scratch.directory.remove() }
+        let home = scratch.directory.url.appendingPathComponent("a:b", isDirectory: true)
+        try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
+        let file = home.appendingPathComponent("hooks.json")
+        let table = Dictionary(uniqueKeysWithValues: Self.events.map { event in
+            (event.name, [["matcher": "*", "hooks": [["type": "command", "command": "\(scratch.binary) \(event.subcommand)"]]]])
+        })
+        try JSONSerialization.data(withJSONObject: ["hooks": table]).write(to: file)
+        let records = ["session_start", "pre_tool_use", "post_tool_use"].map { event in
+            "[hooks.state.\"\(file.resolvingSymlinksInPath().path):\(event):0:0\"]\ntrusted_hash = \"sha256:0f\"\n"
+        }
+        try records.joined(separator: "\n").write(to: home.appendingPathComponent("config.toml"), atomically: true, encoding: .utf8)
+        let probe = try DoctorProbe(tool: GizmoHooks.tool, version: "gizmo 1.0", environment: ["PATH": "/usr/bin:/bin"])
+        defer { probe.close() }
+        let doctor = DoctorCodex(home: AgentPaths.CodexHome(directory: home, source: "--codex-dir"), runner: Self.registered(scratch.binary), probe: probe, hooks: Self.hooks, server: Self.server, expectedTools: Self.tools)
+        let printed = Self.lines(doctor.checks())
+
+        #expect(printed.contains("codex trust: pass — trust recorded for 3 of 3 in "), "\(printed)")
+    }
+
     private static func hasNothing(_ scratch: Scratch, _ runner: FakeCodex) throws -> Bool {
         let probe = try DoctorProbe(tool: GizmoHooks.tool, version: "gizmo 1.0", environment: [:])
         defer { probe.close() }

@@ -38,7 +38,7 @@ public struct DoctorCursor {
         } catch {
             return false
         }
-        return DoctorTraces.hooksHoldNothing(data, tool: install.hooks.tool)
+        return DoctorTraces.hooksHoldNothing(data, tool: install.hooks.tool, subcommands: install.hooks.hooks.map { install.hooks.registeredSubcommand(for: $0) })
             && DoctorTraces.serversHoldNothing(in: directory.appendingPathComponent(CursorMcpFile.fileName), mcp: install.mcp)
     }
 
@@ -53,7 +53,7 @@ public struct DoctorCursor {
             checks.append(hooksCheck(missing: missing, found: hooks.map(\.event), file: hooksFile))
         } catch {
             hooks = []
-            checks.append(.fail(agent, "hooks", String(describing: error)))
+            checks.append(.fail(agent, "hooks", DoctorTraces.describe(error)))
         }
         let config = directory.appendingPathComponent(CursorMcpFile.fileName)
         let name = install.mcp.server.name

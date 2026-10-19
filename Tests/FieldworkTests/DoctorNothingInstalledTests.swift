@@ -190,6 +190,38 @@ struct DoctorNothingInstalledTests {
 
         #expect(try !Self.cursor(directory).hasNothingInstalled)
     }
+
+    // MARK: A tool that lists no hook subcommands of its own
+
+    @Test
+    func claudeFindsTheHookThatItsRegistrationRecognisesWithoutTheToolListingSubcommands() throws {
+        let home = try TemporaryDirectory()
+        defer { home.remove() }
+        let environment = Self.environment(home)
+        let tool = FieldworkTool(name: "gizmo")
+        let hooks = HookRegistration(tool: tool, events: [GizmoHooks.sessionStart])
+        let data = try hooks.apply(to: nil, command: "/x/gizmo session-start", event: GizmoHooks.sessionStart).data
+        try Self.putSettings(data, in: environment)
+        let doctor = try DoctorClaude(environment: environment, probe: Self.spentProbe(environment), hooks: hooks, server: ClaudeMcpServer(tool: tool), expectedTools: ["look"])
+
+        #expect(doctor.registeredHooks(in: data).map(\.event) == ["SessionStart"])
+        #expect(!doctor.hasNothingInstalled)
+    }
+
+    @Test
+    func cursorFindsTheHookThatItsRegistrationRecognisesWithoutTheToolListingSubcommands() throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.remove() }
+        let tool = FieldworkTool(name: "gizmo")
+        let hooks = CursorHooksFile(tool: tool, agentFlag: "--agent cursor", hooks: [CursorHooksFile.Hook(event: "sessionStart", subcommand: "session-start")])
+        let install = CursorInstall(mcp: CursorMcpFile(server: ClaudeMcpServer(tool: tool)), hooks: hooks, directoryFlag: "--cursor-dir")
+        let file = directory.url.appendingPathComponent("hooks.json")
+        try Self.write(["version": 1, "hooks": ["sessionStart": [["command": "/x/gizmo session-start --agent cursor"]]]], at: file)
+        let doctor = try DoctorCursor(directory: directory.url, probe: Self.spentProbe([:]), install: install, expectedTools: ["look"])
+
+        #expect(try doctor.registeredHooks(in: Data(contentsOf: file)).map(\.event) == ["sessionStart"])
+        #expect(!doctor.hasNothingInstalled)
+    }
 }
 
 private extension DoctorNothingInstalledTests {

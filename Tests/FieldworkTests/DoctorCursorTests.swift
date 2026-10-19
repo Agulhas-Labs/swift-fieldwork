@@ -90,6 +90,36 @@ struct DoctorCursorTests {
     }
 
     @Test
+    func aToolWithItsOwnInstallCommandNamesItInTheRemedies() throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.remove() }
+        let tool = FieldworkTool(name: "gizmo", hookSubcommands: ["session-start"], installCommand: "gizmo setup")
+        let hooks = CursorHooksFile(tool: tool, agentFlag: "--agent cursor", hooks: [CursorHooksFile.Hook(event: "sessionStart", subcommand: "session-start")])
+        let install = CursorInstall(mcp: CursorMcpFile(server: ClaudeMcpServer(tool: tool)), hooks: hooks, directoryFlag: "--cursor-dir")
+        let probe = try DoctorProbe(tool: tool, version: "gizmo 1.0", environment: ["PATH": "/usr/bin:/bin"])
+        defer { probe.close() }
+        let checks = DoctorCursor(directory: directory.url, probe: probe, install: install, expectedTools: Self.tools).checks()
+
+        #expect(Self.line("hooks", in: checks)?.hasSuffix("run `gizmo setup --agent cursor`") == true)
+        #expect(Self.line("server", in: checks)?.hasSuffix("run `gizmo setup --agent cursor`") == true)
+        #expect(!checks.contains { $0.line.contains("gizmo install") })
+    }
+
+    @Test
+    func anUnreadableHooksFileFailsTheHooksLineWithThePathAndWhyAndNotNothingWritten() throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.remove() }
+        let file = directory.url.appendingPathComponent("hooks.json")
+        try FileManager.default.createSymbolicLink(atPath: file.path, withDestinationPath: directory.url.appendingPathComponent("nowhere").path)
+
+        let line = try #require(Self.line("hooks", in: Self.checks(directory.url)))
+
+        #expect(line.hasPrefix("cursor hooks: fail — "), "\(line)")
+        #expect(line.contains(file.path), "\(line)")
+        #expect(!line.contains("nothing written"), "\(line)")
+    }
+
+    @Test
     func aDirectoryThatIsNotUnderAnyHomeIsCheckedAsGiven() throws {
         let install = try Install()
         defer { install.directory.remove() }

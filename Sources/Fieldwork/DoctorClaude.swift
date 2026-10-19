@@ -54,7 +54,7 @@ public struct DoctorClaude {
         } catch {
             return false
         }
-        return DoctorTraces.hooksHoldNothing(data, tool: hooks.tool)
+        return DoctorTraces.hooksHoldNothing(data, tool: hooks.tool, subcommands: hooks.events.map(\.subcommand))
             && DoctorTraces.serversHoldNothing(in: AgentPaths.claudeConfig(environment: environment), mcp: CursorMcpFile(server: server))
     }
 
