@@ -89,12 +89,22 @@ public struct ClaudeMcpInstall: Equatable, Sendable {
         return succeeded ?? last
     }
 
-    /// Removes the server named by this install, by name and without reading the config, through `runner`: reports what happened and never throws for a `claude` failure.
+    /// Removes the server named by this install, by name, through `runner`, after reading the config at `config`: reports what happened and never throws for a `claude` failure.
     ///
-    /// Every removal the server lists runs; the line says it was removed when any did, and a failure is reported only when all failed.
-    public func uninstall(runner: any ClaudeMcpRunner) -> InstallOutcome {
+    /// A config that cannot be read is a failure and runs nothing; a server registered nowhere the removals reach (user scope, and local scope where the server removes unscoped) answers `mcp: nothing registered` without running `claude`, which exits 1 for an absent name. Otherwise every removal the server lists runs; the line says it was removed when any did, and a failure is reported only when all failed.
+    public func uninstall(config: URL, runner: any ClaudeMcpRunner) -> InstallOutcome {
         var outcome = InstallOutcome()
         let command = server.removalCommand
+        if let reason = Self.unreadable(config) {
+            outcome.failures.append("mcp: not checked — \(config.path) \(reason); if \(server.name) is registered there, run: \(command)")
+            return outcome
+        }
+        let registered = server.userEntry(in: config) != nil
+            || (server.removal == .userScopeAndUnscoped && server.hasLocalEntry(in: config))
+        guard registered else {
+            outcome.lines.append("mcp: nothing registered")
+            return outcome
+        }
         let removed: Subprocess.Output?
         do {
             removed = try remove(runner: runner)

@@ -62,6 +62,18 @@ public struct ClaudeMcpServer: Equatable, Sendable {
         return entry((object["mcpServers"] as? [String: Any])?[name])
     }
 
+    /// Whether any project in Claude Code's config at `config` holds a local-scope server of this name.
+    func hasLocalEntry(in config: URL) -> Bool {
+        guard let data = try? Data(contentsOf: config),
+              let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let projects = object["projects"] as? [String: Any]
+        else { return false }
+        return projects.values.contains { project in
+            let servers = (project as? [String: Any])?["mcpServers"] as? [String: Any]
+            return servers?[name] != nil
+        }
+    }
+
     /// A server entry, as the command it runs and whether that is a registration this tool makes.
     func entry(_ value: Any?) -> Entry? {
         guard let value = value as? [String: Any] else { return nil }

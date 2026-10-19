@@ -115,7 +115,7 @@ struct ClaudeMcpRemovalTests {
         let config = try Self.config(in: directory, command: Self.binary)
         let claude = FakeClaude(config: config, removeResults: [true, false])
 
-        let outcome = Self.both.uninstall(runner: claude)
+        let outcome = Self.both.uninstall(config: config, runner: claude)
 
         #expect(claude.calls == [Self.user, Self.unscoped])
         #expect(outcome.lines == ["mcp: removed gizmo"])
@@ -129,7 +129,7 @@ struct ClaudeMcpRemovalTests {
         let config = try Self.config(in: directory, command: Self.binary)
         let claude = FakeClaude(config: config, removeResults: [false, true])
 
-        let outcome = Self.both.uninstall(runner: claude)
+        let outcome = Self.both.uninstall(config: config, runner: claude)
 
         #expect(claude.calls == [Self.user, Self.unscoped])
         #expect(outcome.lines == ["mcp: removed gizmo"])
@@ -142,11 +142,11 @@ struct ClaudeMcpRemovalTests {
         defer { directory.remove() }
         let config = try Self.config(in: directory, command: Self.binary)
 
-        let failed = Self.both.uninstall(runner: FakeClaude(config: config, removeResults: [false, false]))
+        let failed = Self.both.uninstall(config: config, runner: FakeClaude(config: config, removeResults: [false, false]))
         #expect(failed.failures == ["mcp: not removed — `claude mcp remove gizmo --scope user; claude mcp remove gizmo` failed: remove refused"])
         #expect(failed.lines.isEmpty)
 
-        let missing = Self.single.uninstall(runner: FakeClaude(config: config, present: false))
+        let missing = Self.single.uninstall(config: config, runner: FakeClaude(config: config, present: false))
         #expect(missing.lines == ["mcp: `claude` is not on PATH — remove the registration with: claude mcp remove gizmo --scope user"])
         #expect(missing.failures.isEmpty)
     }
