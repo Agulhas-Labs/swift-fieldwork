@@ -8,9 +8,9 @@ public final class DoctorProbe: @unchecked Sendable {
     /// The tool being checked: its name is the scratch directory's and the MCP client's.
     public let tool: FieldworkTool
     /// The tool's own version, which is the MCP client's version and what a registered binary's is compared with.
-    public let version: String
-    /// The scratch directory, removed by ``close()``.
-    public let scratch: URL
+    public let runningVersion: String
+    /// The scratch directory, removed by ``close()``, or when the probe is released.
+    let scratch: URL
     /// The directory every child runs in and every payload names as its `cwd`.
     public let workspace: URL
     private let environment: [String: String]
@@ -35,7 +35,7 @@ public final class DoctorProbe: @unchecked Sendable {
         }
     ) throws {
         self.tool = tool
-        self.version = version
+        runningVersion = version
         scratch = FileManager.default.temporaryDirectory.appendingPathComponent("\(tool.name)-doctor-\(UUID().uuidString)", isDirectory: true)
         workspace = scratch.appendingPathComponent("workspace", isDirectory: true)
         let home = scratch.appendingPathComponent("home", isDirectory: true)
@@ -53,8 +53,13 @@ public final class DoctorProbe: @unchecked Sendable {
         self.launcher = launcher
     }
 
+    /// Removes the scratch directory; a second call, and the release of a closed probe, do nothing more.
     public func close() {
         try? FileManager.default.removeItem(at: scratch)
+    }
+
+    deinit {
+        close()
     }
 
     /// `command` run the way an agent runs a hook, through `sh -c`, in the workspace, with `input` on its input: its exit status and what it printed, or `nil` where it could not be started or outran the limit.
@@ -84,7 +89,7 @@ public final class DoctorProbe: @unchecked Sendable {
     public func listedTools(command: String) -> Result<[String], Refusal> {
         let requests: [[String: Any]] = [
             ["jsonrpc": "2.0", "id": 1, "method": "initialize", "params": [
-                "protocolVersion": "2025-06-18", "capabilities": [String: Any](), "clientInfo": ["name": "\(tool.name)-doctor", "version": version],
+                "protocolVersion": "2025-06-18", "capabilities": [String: Any](), "clientInfo": ["name": "\(tool.name)-doctor", "version": runningVersion],
             ]],
             ["jsonrpc": "2.0", "method": "notifications/initialized"],
             ["jsonrpc": "2.0", "id": 2, "method": "tools/list"],

@@ -9,7 +9,9 @@ public extension DoctorProbe {
 
     /// What a child of `binary` run with `arguments` wrote to stdout and the status it exited with, given `input` on stdin, or `nil` where it could not be launched or was not done within `limit` seconds.
     ///
-    /// A child still running at that deadline is stopped and reaped before this returns. This is the probe's default launcher.
+    /// A child still running at that deadline is stopped and reaped before this returns, and so is every process left in its process group, a grandchild still holding its stdout or one it left running in the background, so that end of the pipe is closed too. This is the probe's default launcher.
+    ///
+    /// The child leads a process group of its own, so a signal that stops the caller, a SIGTERM or a Ctrl-C at the terminal, does not reach it: a caller that needs it to injects a launcher of its own.
     static func launch(
         _ binary: URL,
         arguments: [String],
@@ -45,54 +47,63 @@ public extension DoctorProbe {
             return nil
         }
         let deadline = DispatchTime.now() + limit
-        guard let output = exchange(input, writing: stdin.fileHandleForWriting, reading: stdout.fileHandleForReading, until: deadline),
-              exited.wait(timeout: deadline) == .success
-        else {
+        let reply = exchange(input, writing: stdin.fileHandleForWriting, reading: stdout.fileHandleForReading)
+        guard let output = reply.output(by: deadline), exited.wait(timeout: deadline) == .success else {
             stop(process, exited: exited)
+            // With the group gone nothing holds the pipe's other end, so the read reaches it and closes this side.
+            _ = reply.output(by: .now() + 10)
             return nil
         }
         return (process.terminationStatus, output)
     }
 
-    /// `input` written to a child and its output read to the end on a thread of their own, or `nil` where that is not done by `deadline`.
+    /// `input` written to a child and its output read to the end on a thread of their own.
     ///
     /// That thread closes both ends once it is done, so a child stopped at the deadline leaves neither behind, and one whose ends outlive it holds that thread and never the run.
-    private static func exchange(_ input: Data, writing: FileHandle, reading: FileHandle, until deadline: DispatchTime) -> Data? {
-        let done = DispatchSemaphore(value: 0)
+    private static func exchange(_ input: Data, writing: FileHandle, reading: FileHandle) -> ExchangedReply {
         let reply = ExchangedReply()
         DispatchQueue.global(qos: .userInitiated).async {
             // The child reads its stdin to the end before it writes, so writing all of it first cannot wait on a full stdout.
             try? writing.write(contentsOf: input)
             try? writing.close()
-            reply.set((try? reading.readToEnd()) ?? Data())
+            let output = (try? reading.readToEnd()) ?? Data()
             try? reading.close()
-            done.signal()
+            reply.set(output)
         }
-        guard done.wait(timeout: deadline) == .success else { return nil }
-        return reply.value
+        return reply
     }
 
-    /// A child past its deadline asked to terminate, killed where it is still running a second later, and waited on until it is reaped.
+    /// A child past its deadline and its process group asked to terminate, the group killed a second later, or as soon as the child is gone, and the child waited on until it is reaped.
+    ///
+    /// The group is killed even where the child exited on its own, since what it left running there can still hold its stdout.
     private static func stop(_ process: Process, exited: DispatchSemaphore) {
-        process.terminate()
-        guard exited.wait(timeout: .now() + 1) == .timedOut else { return }
-        kill(process.processIdentifier, SIGKILL)
-        _ = exited.wait(timeout: .now() + 10)
+        let group = process.processIdentifier
+        killpg(group, SIGTERM)
+        let reaped = exited.wait(timeout: .now() + 1) == .success
+        killpg(group, SIGKILL)
+        if !reaped {
+            _ = exited.wait(timeout: .now() + 10)
+        }
     }
 }
 
 private extension DoctorProbe {
-    /// The output a child wrote, handed from the thread that read it to the one waiting on it.
+    /// The output a child wrote, handed from the thread that read it to the one waiting on it, once that thread has closed both ends.
     final class ExchangedReply: @unchecked Sendable {
         private let lock = NSLock()
+        private let done = DispatchSemaphore(value: 0)
         private var data: Data?
 
-        var value: Data? {
-            lock.withLock { data }
+        /// The output, or `nil` where it is not all read by `deadline`; a later call waits again.
+        func output(by deadline: DispatchTime) -> Data? {
+            guard done.wait(timeout: deadline) == .success else { return nil }
+            done.signal()
+            return lock.withLock { data }
         }
 
         func set(_ output: Data) {
             lock.withLock { data = output }
+            done.signal()
         }
     }
 }

@@ -87,7 +87,17 @@ public struct DoctorClaude {
         } catch CocoaError.fileReadNoSuchFile {
             return nil
         } catch {
-            throw SettingsFile.Unresolved(path: settings.path, reason: "unreadable: \(error.localizedDescription)")
+            throw Unreadable(path: settings.path, reason: error.localizedDescription)
+        }
+    }
+
+    /// A settings file that is there and cannot be read, as the hooks check's line says it.
+    struct Unreadable: Error, CustomStringConvertible {
+        let path: String
+        let reason: String
+
+        var description: String {
+            "claude: nothing written — \(path) could not be read: \(reason)"
         }
     }
 
@@ -113,12 +123,17 @@ public struct DoctorClaude {
         }
     }
 
-    /// The user-scope server named as the install names it in `config`, where it is this tool's.
+    /// The user-scope server named as the install names it in `config`, where it runs this tool's binary with the server's arguments.
+    ///
+    /// An `npx` registration is the install's too, but not one this check passes: its command is not the binary the later checks run, and running it can fetch the package.
     func registeredServer(in config: URL) -> (command: String, arguments: [String])? {
         let object = (try? Data(contentsOf: config)).flatMap { try? JSONSerialization.jsonObject(with: $0) } as? [String: Any]
-        let entry = (object?["mcpServers"] as? [String: Any])?[server.name]
-        guard server.entry(entry)?.ours == true, let entry = entry as? [String: Any], let command = entry["command"] as? String else { return nil }
-        return (command, entry["args"] as? [String] ?? [])
+        guard let entry = (object?["mcpServers"] as? [String: Any])?[server.name] as? [String: Any],
+              let command = entry["command"] as? String
+        else { return nil }
+        let arguments = entry["args"] as? [String] ?? []
+        guard URL(fileURLWithPath: command).lastPathComponent == server.tool.name, arguments == server.arguments else { return nil }
+        return (command, arguments)
     }
 
     private func ruleCheck(_ rule: ClaudeRuleInstall) -> DoctorCheck {

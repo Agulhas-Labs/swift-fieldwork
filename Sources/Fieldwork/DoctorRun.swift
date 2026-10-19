@@ -22,7 +22,7 @@ public struct DoctorRun {
         guard case let .success(registered) = version else {
             return [.fail(agent, "binary", "\(Self.reason(version)); run `\(probe.tool.name) install --agent \(agent.rawValue)` from the binary you mean to use")]
         }
-        let running = probe.version
+        let running = probe.runningVersion
         let versionCheck = registered == running
             ? DoctorCheck.pass(agent, "version", "registered \(registered), running \(running)")
             : DoctorCheck(agent: agent, name: "version", status: .differs, detail: "registered \(registered), running \(running)")

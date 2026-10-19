@@ -69,7 +69,7 @@ struct DoctorClaudeTests {
         }
     }
 
-    private static func checks(_ install: Install, limit: TimeInterval = 20, version: String = "gizmo 1.0") throws -> [DoctorCheck] {
+    private static func checks(_ install: Install, server: ClaudeMcpServer = server, limit: TimeInterval = 20, version: String = "gizmo 1.0") throws -> [DoctorCheck] {
         let probe = try DoctorProbe(tool: GizmoHooks.tool, version: version, environment: install.environment, limit: limit)
         defer { probe.close() }
         return DoctorClaude(
@@ -141,6 +141,36 @@ struct DoctorClaudeTests {
 
         #expect(Self.check("server", in: checks)?.status == .fail)
         #expect(Self.check("binary", in: checks) == nil)
+    }
+
+    /// The install's `npx` registration is not the binary the later checks run, and running it could fetch the package, so the check stops there.
+    @Test
+    func anNpxRegistrationFailsTheServerCheckAndRunsNothing() throws {
+        let install = try Install()
+        defer { install.directory.remove() }
+        let config = AgentPaths.claudeConfig(environment: install.environment)
+        let entry: [String: Any] = ["mcpServers": ["gizmo": ["command": "npx", "args": ["-y", "@x/gizmo", "mcp"]]]]
+        try JSONSerialization.data(withJSONObject: entry).write(to: config)
+
+        let checks = try Self.checks(install, server: ClaudeMcpServer(tool: GizmoHooks.tool, npmPackage: "@x/gizmo"))
+
+        #expect(checks.map(\.name) == ["hooks", "server"])
+        let server = try #require(Self.check("server", in: checks))
+        #expect(server.status == .fail)
+        #expect(server.detail == "no MCP server named gizmo of this tool's in \(config.path); run `gizmo install --agent claude`")
+    }
+
+    @Test
+    func anUnreadableSettingsFileFailsTheHooksCheckAndSaysSo() throws {
+        let install = try Install()
+        defer { install.directory.remove() }
+        try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: install.settings.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: install.settings.path) }
+
+        let hooks = try #require(Self.check("hooks", in: Self.checks(install)))
+
+        #expect(hooks.status == .fail)
+        #expect(hooks.detail.hasPrefix("claude: nothing written — \(install.settings.path) could not be read: "))
     }
 
     @Test
