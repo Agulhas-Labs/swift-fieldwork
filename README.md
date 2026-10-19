@@ -9,15 +9,17 @@ It holds what a tool needs to find and talk to the coding agents on a machine (C
 - Detection, selection and the prompt: `AgentDetection` finds the agents, `AgentSelection` decides which to install into, `InstallPrompt` asks, and `InstallStepReport` and `InstallSummary` report what each step did.
 - Settings files with their backups: `SettingsFile` and `SettingsBackupFile`.
 - `Subprocess`: a bounded child-process runner.
+- Claude Code hooks: `HookRegistration` merges a tool's hooks into `settings.json` beside other tools' and removes only its own, and `HookOutput` is the JSON a hook prints back.
+- Claude Code setup: `ClaudeMcpServer` and `ClaudeMcpInstall` register and remove the tool's MCP server through `claude mcp`, and `ClaudeRuleInstall` copies and removes its agent rule.
 - The lease store: `LeaseStore` and `DeviceLease`, which let one run at a time claim a simulator or device.
 
 A second library, `SimulatorServices`, boots iOS simulators with the system services a project does not need switched off, and the `simulator-profile` tool measures which those are for each simulator runtime (see [Simulator services](#simulator-services)). A third, `SimulatorAnimations`, builds the library that switches UIKit animations off in an app under test (see [Simulator animations](#simulator-animations)).
 
-Not here yet, and coming in later releases: registering hooks and MCP servers, installing the rule file, writing Cursor's configuration, and a doctor.
+Not here yet, and coming in later releases: writing Cursor's configuration, and a doctor.
 
 ## Status
 
-0.3.0; the API may change before 1.0.
+0.4.0; the API may change before 1.0.
 
 ## Usage
 
@@ -108,10 +110,10 @@ A Swift 6.2 toolchain and macOS 13 or later. Foundation only; no dependencies. `
 
 ## Depending on it
 
-Version 0.3.0 is tagged. In `Package.swift`:
+Version 0.4.0 is tagged. In `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.3.0")
+.package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.4.0")
 ```
 
 and in the target that uses it, any of the libraries:
