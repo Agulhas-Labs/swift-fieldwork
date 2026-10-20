@@ -90,8 +90,6 @@ swift run simulator-profile --runtime com.apple.CoreSimulator.SimRuntime.iOS-27-
 - **Health:** the same device with the candidates off, checked against the worst of several stock boots (`--baselines`, 3): it boots, the runtime reports the services disabled, the app installs and launches, the UI test passes in comparable time, no process floods the log, and nothing crashes and respawns. A log flood or respawn counts only if it recurs on a second boot; any other failure stands. When the check fails, a bisection finds the candidates the device needs and keeps them on (`keptByHealth`). `--keep` keeps the input app's own capabilities on throughout, so their services take no trials and are not kept for everyone as a need the bisection found; the candidates among them are never checked off, so the profile marks them `unchecked` and leaves them on until a run with an input that does not keep them checks them.
 - **Output:** the profile as JSON, and with `--swift`, the Swift source to add to the library; the tool prints the registry line to add to `ServiceProfiles.sources`. Regenerate a profile rather than edit it: a test checks each bundled file is exactly what the tool renders.
 
-The idea of switching simulator services off came from simslim (MIT). None of its code or tables ship here: every profile is measured by this tool.
-
 ## Simulator animations
 
 `SimulatorAnimations` builds a small simulator library that switches UIKit animations off in the app it is inserted into, so UI tests do not wait on them. Insert it with `DYLD_INSERT_LIBRARIES`; it works in the simulator only.
