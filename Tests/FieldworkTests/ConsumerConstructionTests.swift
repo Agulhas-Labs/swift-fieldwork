@@ -35,6 +35,13 @@ struct ConsumerConstructionTests {
     }
 
     @Test
+    func theRuleNoteNamesTheRoutesTheToolGivesIt() {
+        let rule = ClaudeRuleInstall(tool: FieldworkTool(name: "gizmo"), shippedFileName: "Gizmo.md", loadsOn: "**/*.swift", installCommand: "gizmo install-hook", shippedBy: "Homebrew or the release tarball", writtenBy: nil)
+
+        #expect(rule.noSourceReason(exists: false) == "no Gizmo.md ships with this binary (`gizmo install-hook` from Homebrew or the release tarball copies the Gizmo.md they ship)")
+    }
+
+    @Test
     func aFailedRunSaysWhyThroughPublicAPI() {
         let output = Subprocess.Output(succeeded: false, standardOutput: "", standardError: "Error: failed to load configuration\nCaused by:\nlogin revoked\n")
 
