@@ -17,13 +17,19 @@ public struct ClaudeRuleInstall: Equatable, Sendable {
     public let loadsOn: String
     /// The command that copies the rule a package manager ships, as the note on a missing rule names it: the tool's own install command unless the tool calls it something else.
     public let installCommand: String
+    /// The routes that ship the rule beside the binary, as the note on a missing rule names them.
+    public let shippedBy: String
+    /// The script that writes the rule, as the note on a missing rule names it; `nil` for a tool with no such script.
+    public let writtenBy: String?
 
-    public init(tool: FieldworkTool, shippedFileName: String, shareDirectory: String? = nil, loadsOn: String, installCommand: String? = nil) {
+    public init(tool: FieldworkTool, shippedFileName: String, shareDirectory: String? = nil, loadsOn: String, installCommand: String? = nil, shippedBy: String = "Homebrew or npm", writtenBy: String? = "install.sh") {
         self.tool = tool
         self.shippedFileName = shippedFileName
         self.shareDirectory = shareDirectory ?? tool.name
         self.loadsOn = loadsOn
         self.installCommand = installCommand ?? tool.installCommand
+        self.shippedBy = shippedBy
+        self.writtenBy = writtenBy
     }
 
     /// The rule that ships with the binary at `binary`: beside the file its links lead to (the release bundle), else in `../share/<shareDirectory>` from there (Homebrew's `pkgshare`), else `nil`.
@@ -51,9 +57,10 @@ public struct ClaudeRuleInstall: Equatable, Sendable {
         }
     }
 
-    /// Why nothing is done where no rule ships beside the binary, for a rule at the destination that is already there (`exists`) or not: `install.sh` writes the rule, and the tool's ``installCommand`` from Homebrew or npm copies the one they ship, so a rule installed that way is left as it is.
+    /// Why nothing is done where no rule ships beside the binary, for a rule at the destination that is already there (`exists`) or not: the configured ``writtenBy`` script writes the rule, and the tool's ``installCommand`` from the configured ``shippedBy`` routes copies the one they ship, so a rule installed that way is left as it is.
     public func noSourceReason(exists: Bool) -> String {
-        let installer = "(install.sh writes it; `\(installCommand)` from Homebrew or npm copies the \(shippedFileName) they ship)"
+        let copies = "`\(installCommand)` from \(shippedBy) copies the \(shippedFileName) they ship"
+        let installer = "(\(writtenBy.map { "\($0) writes it; " } ?? "")\(copies))"
         return exists ? "no \(shippedFileName) ships beside this binary to refresh it from \(installer)" : "no \(shippedFileName) ships with this binary \(installer)"
     }
 

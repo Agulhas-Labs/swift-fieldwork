@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.0
+
+- Added: `ClaudeRuleInstall`'s `shippedBy` (default `Homebrew or npm`) and `writtenBy` (default `install.sh`, nil for none): the routes the note on a missing rule names, so a tool that ships by other routes, or has no script that writes its rule, is not told of ones it lacks.
+
 ## 0.7.0
 
 - Added: `Subprocess.Output.failureReason` is public: what a failed run said, its error before its output, with a `Caused by:` chain after the first line, so a tool's own `codex` or `claude` calls report a failure in the words the library's do.
