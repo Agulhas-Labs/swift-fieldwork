@@ -13,5 +13,5 @@
 # Format: one directory name per line (compared case-insensitively), then `#` and the reason.
 
 SimWalk        # a public tool (github.com/Agulhas-Labs/simwalk), a consumer of this library
-Sift           # a public tool (github.com/Agulhas-Labs/sift), a consumer of this library
+Sift           # a public tool (github.com/Agulhas-Labs/swift-sure, formerly sift), a consumer of this library
 swift-fieldwork # this library: a clone may sit beside the primary checkout under this name

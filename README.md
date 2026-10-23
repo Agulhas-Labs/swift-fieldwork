@@ -1,6 +1,6 @@
 # swift-fieldwork
 
-The agent-setup layer shared by the Fieldwork tools: [sift](https://github.com/Agulhas-Labs/sift), a Swift code index for coding agents, and [SimWalk](https://github.com/Agulhas-Labs/simwalk), deterministic UI walks of a running iOS app.
+The agent-setup layer shared by the Fieldwork tools: [SwiftSure](https://github.com/Agulhas-Labs/swift-sure), a Swift code index for coding agents, and [SimWalk](https://github.com/Agulhas-Labs/simwalk), deterministic UI walks of a running iOS app.
 
 It holds what a tool needs to find and talk to the coding agents on a machine (Claude Code, Cursor and Codex) and to share a device between runs. The tool supplies its own identity as values; the package carries none.
 
