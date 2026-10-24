@@ -1,0 +1,40 @@
+# The tap formula for the Fieldwork tools. Generated from a template by Scripts/homebrew/make-formula.sh, which
+# fills in the url and the checksum of the tag being released - never edit those by hand.
+#
+# The package installs SwiftSure and SimWalk together, through their own formulae, and nothing else: it ships
+# no binary of its own, only this repository's README and licence as documentation. Registering the tools with a
+# coding agent writes to that agent's configuration, which is the user's own, so it stays an explicit command in
+# the caveats rather than something a package manager does to you.
+class Fieldwork < Formula
+  desc "SwiftSure and SimWalk, the Fieldwork tools for coding agents"
+  homepage "https://github.com/Agulhas-Labs/swift-fieldwork"
+  url "@URL@"
+  sha256 "@SHA256@"
+  license "Apache-2.0"
+
+  depends_on "agulhas-labs/tap/simwalk"
+  depends_on "agulhas-labs/tap/swift-sure"
+
+  def install
+    doc.install "README.md", "LICENSE"
+  end
+
+  def caveats
+    <<~EOS
+      Installing this package does not write to any coding agent's configuration. To set up both tools, run
+      either of:
+
+        swift-sure install
+        simwalk install
+
+      Each asks which coding agents to set up, then runs the other's install for the same agents, so one
+      command is enough. Without a terminal to ask on, pass --agent <name> or --yes. SimWalk does not
+      support Codex yet: run swift-sure install to set SwiftSure up there.
+    EOS
+  end
+
+  test do
+    assert_match(/\d+\.\d+\.\d+/, shell_output("#{formula_opt_bin("swift-sure")}/swift-sure --version"))
+    assert_match(/\d+\.\d+\.\d+/, shell_output("#{formula_opt_bin("simwalk")}/simwalk --version"))
+  end
+end
