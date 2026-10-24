@@ -21,8 +21,10 @@ public struct DeviceLease: Codable, Equatable, Sendable {
     public let clonedFrom: String?
     /// Whether the lease is on a paired physical iPhone; absent in a lease written before the phone could be leased, which is a simulator's.
     public let physicalDevice: Bool?
+    /// Whether the device was shut down when the lease was taken on it, so that releasing the lease may shut it down again and leave it as it was found; absent when it was not, or in a lease written before this was recorded, and then the device is left as it is.
+    public let foundShutDown: Bool?
 
-    public init(token: String, holderPID: Int32, createdAt: Date, expiresAt: Date, createdDevice: Bool, clonedFrom: String?, physicalDevice: Bool? = nil) {
+    public init(token: String, holderPID: Int32, createdAt: Date, expiresAt: Date, createdDevice: Bool, clonedFrom: String?, physicalDevice: Bool? = nil, foundShutDown: Bool? = nil) {
         self.token = token
         self.holderPID = holderPID
         self.createdAt = createdAt
@@ -30,5 +32,6 @@ public struct DeviceLease: Codable, Equatable, Sendable {
         self.createdDevice = createdDevice
         self.clonedFrom = clonedFrom
         self.physicalDevice = physicalDevice
+        self.foundShutDown = foundShutDown
     }
 }

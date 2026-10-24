@@ -30,9 +30,19 @@ public struct LeaseStore: Sendable {
         createdDevice: Bool = false,
         clonedFrom: String? = nil,
         physicalDevice: Bool = false,
+        foundShutDown: Bool = false,
         token: String = UUID().uuidString
     ) throws -> DeviceLease {
-        let granted = DeviceLease(token: token, holderPID: holderPID, createdAt: now, expiresAt: now.addingTimeInterval(ttl), createdDevice: createdDevice, clonedFrom: clonedFrom, physicalDevice: physicalDevice ? true : nil)
+        let granted = DeviceLease(
+            token: token,
+            holderPID: holderPID,
+            createdAt: now,
+            expiresAt: now.addingTimeInterval(ttl),
+            createdDevice: createdDevice,
+            clonedFrom: clonedFrom,
+            physicalDevice: physicalDevice ? true : nil,
+            foundShutDown: foundShutDown ? true : nil
+        )
         let data = try Self.encoder.encode(granted)
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

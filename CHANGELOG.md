@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.0
+
+- Added: `DeviceLease.foundShutDown` and `LeaseStore.acquire(..., foundShutDown:)` (default `false`): whether the device was shut down when the lease was taken, so a tool's release can shut down a device its lease's walk booted and leave it as it was found. The key is written only when true, so every other lease's bytes are unchanged, and a lease written before it existed reads as `nil`: leave the device as it is.
+
 ## 0.8.0
 
 - Added: `ClaudeRuleInstall`'s `shippedBy` (default `Homebrew or npm`) and `writtenBy` (default `install.sh`, nil for none): the routes the note on a missing rule names, so a tool that ships by other routes, or has no script that writes its rule, is not told of ones it lacks.

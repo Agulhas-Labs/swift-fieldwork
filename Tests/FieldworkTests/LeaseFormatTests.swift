@@ -66,4 +66,35 @@ struct LeaseFormatTests {
 
         #expect(try Data(contentsOf: store.url(for: udid)) == cloneFixture())
     }
+
+    private func foundShutDownFixture(sourceLocation: SourceLocation = #_sourceLocation) throws -> Data {
+        let url = try #require(Bundle.module.url(forResource: "lease-0.9.0-found-shut-down", withExtension: "json", subdirectory: "Fixtures"), sourceLocation: sourceLocation)
+        return try Data(contentsOf: url)
+    }
+
+    /// A lease that found its device shut down says so, and only then: the fixture round-trips, and the first release's fixture, written before the key existed, reads as a lease that did not.
+    @Test
+    func foundShutDownIsWrittenOnlyWhenTrue() throws {
+        let bytes = try foundShutDownFixture()
+        let lease = try LeaseStore.decoder.decode(DeviceLease.self, from: bytes)
+
+        #expect(lease.foundShutDown == true)
+        #expect(try LeaseStore.encoder.encode(lease) == bytes)
+        #expect(try LeaseStore.decoder.decode(DeviceLease.self, from: fixture()).foundShutDown == nil)
+    }
+
+    /// The store writes `foundShutDown` when the acquisition says the device was shut down, with the fixture's bytes, and leaves the key out when it was not.
+    @Test
+    func theStoreWritesFoundShutDownAsTheFixtureHoldsIt() throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.remove() }
+        let store = LeaseStore(directory: directory.url, isAlive: { _ in true })
+        let instant = try #require(ISO8601DateFormatter().date(from: "2027-01-15T08:00:00Z"))
+        _ = try store.acquire(udid: udid, ttl: 3600, holderPID: 7, now: instant, foundShutDown: true, token: "t")
+        _ = try store.acquire(udid: "OTHER-DEVICE", ttl: 3600, holderPID: 7, now: instant, token: "u")
+
+        #expect(try Data(contentsOf: store.url(for: udid)) == foundShutDownFixture())
+        let other = try LeaseStore.decoder.decode(DeviceLease.self, from: Data(contentsOf: store.url(for: "OTHER-DEVICE")))
+        #expect(other.foundShutDown == nil)
+    }
 }
