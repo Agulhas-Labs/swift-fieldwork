@@ -110,4 +110,78 @@ struct TwoToolsClaudeTests {
         let backups = try FileManager.default.contentsOfDirectory(atPath: directory.url.path).filter { $0.contains(".bak-") }
         #expect(backups.sorted() == ["settings.json.bak-gizmo", "settings.json.bak-widget"])
     }
+
+    /// Every hook entry whose command passes `isMatch`, as canonical bytes in file order, each with its event and its group's matcher.
+    private static func entries(_ object: [String: Any], where isMatch: (String) -> Bool) throws -> [Data] {
+        let hooks = object["hooks"] as? [String: Any] ?? [:]
+        var result: [Data] = []
+        for event in hooks.keys.sorted() {
+            for group in hooks[event] as? [[String: Any]] ?? [] {
+                for hook in group["hooks"] as? [[String: Any]] ?? [] {
+                    guard let command = hook["command"] as? String, isMatch(command) else { continue }
+                    let entry: [String: Any] = ["event": event, "matcher": group["matcher"] ?? NSNull(), "hook": hook]
+                    try result.append(JSONSerialization.data(withJSONObject: entry, options: [.sortedKeys]))
+                }
+            }
+        }
+        return result
+    }
+
+    private static func parsed(_ settings: URL, sourceLocation: SourceLocation = #_sourceLocation) throws -> [String: Any] {
+        try #require(JSONSerialization.jsonObject(with: Data(contentsOf: settings)) as? [String: Any], sourceLocation: sourceLocation)
+    }
+
+    private static func withoutHooks(_ object: [String: Any]) throws -> Data {
+        var rest = object
+        rest["hooks"] = nil
+        return try JSONSerialization.data(withJSONObject: rest, options: [.sortedKeys])
+    }
+
+    /// Uninstalling either tool, whichever installed first, leaves the other tool's entries, the user's own hooks and every other key exactly as they were.
+    ///
+    /// The user's hooks share a matcher group with each tool's entries, so a removal that touched a neighbour would change them.
+    ///
+    /// The surviving tool's install, run again, finds its registration intact and writes nothing.
+    @Test(arguments: [false, true], [false, true])
+    func uninstallingEitherLeavesEverythingElseByteIdentical(gizmoFirst: Bool, uninstallGizmo: Bool) throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.remove() }
+        let settings = directory.url.appendingPathComponent("settings.json")
+        let userHooks = #"""
+        {"hooks":{"PreToolUse":[{"matcher":"Bash|Read","hooks":[{"type":"command","command":"/usr/local/bin/audit-log pre","timeout":10}]}],
+        "Stop":[{"hooks":[{"type":"command","command":"/usr/local/bin/audit-log stop"}]}]},"theme":"dark"}
+        """#
+        try Data(userHooks.utf8).write(to: settings)
+
+        let gizmo = (registration: GizmoHooks.registration, binary: "/bin/gizmo")
+        let widget = (registration: Self.widget, binary: "/bin/widget")
+        let order = gizmoFirst ? [gizmo, widget] : [widget, gizmo]
+        for tool in order {
+            try Self.install(tool.registration, binary: tool.binary, into: settings)
+        }
+        let removed = uninstallGizmo ? gizmo : widget
+        let survivor = uninstallGizmo ? widget : gizmo
+        let isRemoved: (String) -> Bool = { $0.hasPrefix("\(removed.binary) ") }
+        let isSurvivor: (String) -> Bool = { $0.hasPrefix("\(survivor.binary) ") }
+        let isUser: (String) -> Bool = { $0.hasPrefix("/usr/local/bin/audit-log ") }
+
+        let both = try Self.parsed(settings)
+        let survivorBefore = try Self.entries(both, where: isSurvivor)
+        let userBefore = try Self.entries(both, where: isUser)
+        let restBefore = try Self.withoutHooks(both)
+        #expect(try !Self.entries(both, where: isRemoved).isEmpty)
+        #expect(!survivorBefore.isEmpty)
+        #expect(userBefore.count == 2)
+
+        try Self.uninstall(removed.registration, from: settings)
+        let after = try Self.parsed(settings)
+        #expect(try Self.entries(after, where: isRemoved).isEmpty)
+        #expect(try Self.entries(after, where: isSurvivor) == survivorBefore)
+        #expect(try Self.entries(after, where: isUser) == userBefore)
+        #expect(try Self.withoutHooks(after) == restBefore)
+
+        let uninstalled = try Data(contentsOf: settings)
+        try Self.install(survivor.registration, binary: survivor.binary, into: settings)
+        #expect(try Data(contentsOf: settings) == uninstalled)
+    }
 }
