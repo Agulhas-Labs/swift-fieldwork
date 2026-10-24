@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.0
+
+- Added: `CodexHooksFile`, the merge of a tool's hooks into Codex's `hooks.json`: its handlers are appended after any foreign group and rewritten in place on a binary move or a switch between two of its hook sets, so Codex's position-keyed trust holds, and removal leaves every foreign handler, group and key byte for byte.
+
 ## 0.10.0
 
 - Added: `ClaudeMcpServer.hasLocalEntry(in:)` is public: whether any project in Claude Code's config holds a local-scope server of the tool's name. With `userEntry(in:)`, a tool's uninstall can tell whether there is anything for the removal to reach without reading Claude Code's config itself.
