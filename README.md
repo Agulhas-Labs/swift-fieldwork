@@ -15,15 +15,13 @@ It holds what a tool needs to find and talk to the coding agents on a machine (C
 - Cursor setup: `CursorMcpFile` and `CursorHooksFile` merge the tool's server into `mcp.json` and its hooks into `hooks.json` beside other tools', and `CursorInstall`, `CursorHookInstaller` and `CursorInstallStep` write both; `CursorHookPayload`, `CursorPreToolUse`, `CursorPostToolUse`, `CursorSessionStart` and `CursorHookOutput` read a Cursor hook payload as the Claude Code one the tool's hook judges and write its answer back in Cursor's schema.
 - The lease store: `LeaseStore` and `DeviceLease`, which let one run at a time claim a simulator or device.
 - The doctor: `DoctorCheck`, `DoctorReport` (with its `--json` encoding), `DoctorProbe` (runs what an agent would run in a scratch directory, through a launcher the consumer may replace), and one check per agent: `DoctorClaude`, `DoctorCursor` and `DoctorCodex`, each of which also says whether nothing of the tool's is installed there.
-- Codex's MCP lookup: `CodexMcpServer` reads and changes the tool's server through `codex mcp`, run by a `CodexMcpRunner` (`CodexCLI` runs the real one).
+- Codex setup: `CodexHooksFile` merges the tool's hooks into Codex's `hooks.json` beside other tools', keeping every foreign group where it was, since Codex keys a hook's trust by its position. `CodexInstall`, `CodexHookInstaller` and `CodexInstallStep` write it and register the server through `CodexMcpServer`, which reads and changes it through `codex mcp`, run by a `CodexMcpRunner` (`CodexCLI` runs the real one).
 
 A second library, `SimulatorServices`, boots iOS simulators with the system services a project does not need switched off, and the `simulator-profile` tool measures which those are for each simulator runtime (see [Simulator services](#simulator-services)). A third, `SimulatorAnimations`, builds the library that switches UIKit animations off in an app under test (see [Simulator animations](#simulator-animations)).
 
-Not here yet, and coming in a later release: the Codex install itself, merging the tool's hooks into Codex's `hooks.json`.
-
 ## Status
 
-0.10.0; the API may change before 1.0.
+0.11.0; the API may change before 1.0.
 
 ## Usage
 
