@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added: the `fieldwork` Homebrew formula, which installs SwiftSure and SimWalk together and writes nothing to an agent's configuration. `Scripts/homebrew/make-formula.sh <tag> <out-dir>` generates it from `fieldwork.rb.template` for a release tag, with its checksum; `Scripts/homebrew/test-make-formula.sh` is its offline suite.
+
 ## 0.9.0
 
 - Added: `DeviceLease.foundShutDown` and `LeaseStore.acquire(..., foundShutDown:)` (default `false`): whether the device was shut down when the lease was taken, so a tool's release can shut down a device its lease's walk booted and leave it as it was found. The key is written only when true, so every other lease's bytes are unchanged, and a lease written before it existed reads as `nil`: leave the device as it is.

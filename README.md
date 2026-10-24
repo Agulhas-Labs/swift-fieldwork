@@ -112,6 +112,10 @@ let inserted = AnimationsOffLibrary.insertingLibrary(url, into: environment["DYL
 
 A Swift 6.2 toolchain and macOS 13 or later. Foundation only; no dependencies. `SimulatorServices` and `simulator-profile` also need Xcode with an iOS simulator runtime, and `SimulatorAnimations` Xcode with the iOS simulator SDK.
 
+## Install
+
+`brew install agulhas-labs/tap/fieldwork` installs both tools, SwiftSure and SimWalk. Each can still be installed alone: `agulhas-labs/tap/swift-sure`, `agulhas-labs/tap/simwalk`. Installing the package writes nothing to a coding agent's configuration until `swift-sure install` or `simwalk install` is run; either sets up both tools. `Scripts/homebrew/make-formula.sh <tag> <out-dir>` generates the formula.
+
 ## Depending on it
 
 Version 0.7.0 is tagged. In `Package.swift`:
