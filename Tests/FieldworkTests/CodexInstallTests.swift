@@ -206,6 +206,27 @@ struct CodexInstallTests {
     }
 
     @Test
+    func removeServerNotesAForeignServerAndAMissingCodexOnlyAfterHooksWereRemoved() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let home = Self.home(root)
+        var foreign = InstallOutcome()
+
+        try Self.install.removeServer(found: .foreign("/usr/bin/other mcp"), home: home, runner: FakeCodex(), hooksRemoved: true, into: &foreign)
+
+        #expect(foreign.lines.isEmpty)
+        #expect(foreign.notes == ["mcp: not ours, left alone — a server named gizmo in \(home.directory.path) runs something else (/usr/bin/other mcp)"])
+
+        var noted = InstallOutcome()
+        try Self.install.removeServer(found: .noCodex, home: home, runner: FakeCodex(present: false), hooksRemoved: true, into: &noted)
+        #expect(noted.notes == ["mcp: not checked — `codex` is not on PATH; if Codex runs this tool's server, run: CODEX_HOME=\(home.directory.path) codex mcp remove gizmo"])
+
+        var silent = InstallOutcome()
+        try Self.install.removeServer(found: .noCodex, home: home, runner: FakeCodex(present: false), hooksRemoved: false, into: &silent)
+        #expect(silent == InstallOutcome())
+    }
+
+    @Test
     func anAddThatFailsIsAFailureNamingTheCommandToRun() throws {
         let root = try TemporaryDirectory()
         defer { root.remove() }

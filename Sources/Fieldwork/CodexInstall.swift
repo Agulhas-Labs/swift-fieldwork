@@ -64,6 +64,12 @@ public struct CodexInstall: Equatable, Sendable {
 
         outcome.lines += merged.removed.map { "hooks: removed \($0)" }
         try SettingsFile.write(&outcome, hooksURL, merged.data, original: original, if: merged.changed, tool: hooks.tool)
+        try removeServer(found: found, home: home, runner: runner, hooksRemoved: merged.changed, into: &outcome)
+        return outcome
+    }
+
+    /// The uninstall's server step: takes out ours and notes a foreign one of the name, which stays; without `codex` to ask it notes the command to run when `hooksRemoved` says the tool was installed here.
+    public func removeServer(found: CodexMcpServer.Found, home: AgentPaths.CodexHome, runner: any CodexMcpRunner, hooksRemoved: Bool, into outcome: inout InstallOutcome) throws {
         switch found {
         case let .ours(command):
             let removal = try runner.run(server.removeArguments, home: home.directory)
@@ -75,13 +81,12 @@ public struct CodexInstall: Equatable, Sendable {
             }
         case let .foreign(existing):
             outcome.notes.append("mcp: not ours, left alone — a server named \(server.server.name) in \(home.directory.path) runs something else (\(existing))")
-        case .noCodex where merged.changed:
+        case .noCodex where hooksRemoved:
             // The hooks say this tool was installed here, so the server most likely was too; without `codex` there is no asking.
             outcome.notes.append("mcp: not checked — `codex` is not on PATH; if Codex runs this tool's server, run: \(Self.manual(server.removeArguments, home: home))")
         case .absent, .noCodex:
             break
         }
-        return outcome
     }
 
     /// Registers the server unless a foreign one holds the name or ours is already there, and says which.
