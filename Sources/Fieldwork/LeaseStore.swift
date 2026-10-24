@@ -6,7 +6,7 @@ import Foundation
 
 /// The machine's device leases: one file per leased UDID under the consumer's lease directory.
 ///
-/// **A lease is taken by linking a fully written temporary file to its path** — `link` fails where the path exists, as `O_EXCL` does — so of any number of acquisitions of one device exactly one creates it and the rest find it there, and no lease file is ever there without its bytes. Nothing else creates a lease file. **Every acquisition and every removal is made under one `flock`, and a removal only of the lease it read** — a release by its token, a reclaim of the stale lease it judged — so a reclaim can never remove a lease somebody created after it looked. **A lease that cloned its device leaves the store before its device is deleted** (`retire`): renamed under the lock to a tombstone that keeps every acquisition off the device until the delete is done.
+/// **A lease is taken by linking a fully written temporary file to its path** — `link` fails where the path exists, as `O_EXCL` does — so of any number of acquisitions of one device exactly one creates it and the rest find it there, and no lease file is ever there without its bytes. Nothing else creates a lease file. **Every acquisition and every removal is made under one `flock`, and a removal only of the lease it read** — a release by its token, a reclaim of the stale lease it judged — so a reclaim can never remove a lease somebody created after it looked. **A lease whose release changes its device leaves the store before the device is changed** (`retire`: a clone deleted, or a device the lease found shut down shut down again): renamed under the lock to a tombstone that keeps every acquisition off the device until that is done.
 public struct LeaseStore: Sendable {
     /// The consumer's lease directory, or a scratch directory in a test.
     public let directory: URL
@@ -134,7 +134,7 @@ public struct LeaseStore: Sendable {
             }
             let expiresAt = max(lease.expiresAt, now.addingTimeInterval(ttl))
             guard expiresAt > lease.expiresAt else { return lease }
-            let renewed = DeviceLease(token: lease.token, holderPID: lease.holderPID, createdAt: lease.createdAt, expiresAt: expiresAt, createdDevice: lease.createdDevice, clonedFrom: lease.clonedFrom, physicalDevice: lease.physicalDevice)
+            let renewed = DeviceLease(token: lease.token, holderPID: lease.holderPID, createdAt: lease.createdAt, expiresAt: expiresAt, createdDevice: lease.createdDevice, clonedFrom: lease.clonedFrom, physicalDevice: lease.physicalDevice, foundShutDown: lease.foundShutDown)
             let url = url(for: current.udid)
             let failure = try placeTemporary(Self.encoder.encode(renewed), at: url) { rename($0, $1) }
             guard failure == 0 else {
@@ -402,7 +402,7 @@ public extension LeaseStore {
 }
 
 extension LeaseStore {
-    /// A lease taken out of the store for its device's deletion, and the file holding it.
+    /// A lease taken out of the store while its release changes its device (a clone deleted, a device found shut down shut down again), and the file holding it.
     struct Tombstone {
         let url: URL
         let entry: Entry

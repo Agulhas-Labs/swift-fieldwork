@@ -55,6 +55,20 @@ struct LeaseStoreTests {
         #expect(try FileManager.default.contentsOfDirectory(atPath: directory.url.path).filter { $0.hasSuffix(".tmp") }.isEmpty)
     }
 
+    /// A renewal keeps everything the lease recorded about its device, so a renewed lease that found its device shut down still shuts it down on release.
+    @Test
+    func arenewalKeepsWhatTheLeaseRecordedAboutItsDevice() throws {
+        let directory = try TemporaryDirectory()
+        defer { directory.remove() }
+        let store = LeaseStore(directory: directory.url, isAlive: { _ in true })
+        let lease = try store.acquire(udid: "UDID-1", ttl: 60, holderPID: 41, now: Self.start, foundShutDown: true)
+
+        let renewed = try store.renew(token: lease.token, ttl: 600, now: Self.start.addingTimeInterval(5))
+
+        #expect(renewed.foundShutDown == true)
+        #expect(try store.lease(onDevice: "UDID-1") == renewed)
+    }
+
     /// A lease whose holder has exited is reclaimable by anyone, so it is not renewed — nor one that has expired, nor a token nothing carries.
     @Test
     func arenewalRefusesALeaseThatNoLongerHoldsItsDevice() throws {

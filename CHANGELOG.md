@@ -3,6 +3,7 @@
 ## 0.9.0
 
 - Added: `DeviceLease.foundShutDown` and `LeaseStore.acquire(..., foundShutDown:)` (default `false`): whether the device was shut down when the lease was taken, so a tool's release can shut down a device its lease's walk booted and leave it as it was found. The key is written only when true, so every other lease's bytes are unchanged, and a lease written before it existed reads as `nil`: leave the device as it is.
+- Changed: `LeaseStoreError.awaitingDeletion`'s description covers any release in progress, not only a clone's: a device whose found-shut-down lease is being released is refused with it too, and is not deleted.
 
 ## 0.8.0
 
