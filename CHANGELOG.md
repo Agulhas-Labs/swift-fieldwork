@@ -3,6 +3,7 @@
 ## 0.11.0
 
 - Added: `CodexHooksFile`, the merge of a tool's hooks into Codex's `hooks.json`: its handlers are appended after any foreign group and rewritten in place on a binary move or a switch between two of its hook sets, so Codex's position-keyed trust holds, and removal leaves every foreign handler, group and key byte for byte.
+- Changed: `CursorHookInstallResult` is now `HookInstallResult`, since the Codex installer returns it too; the old name stays as a typealias.
 
 ## 0.10.0
 
