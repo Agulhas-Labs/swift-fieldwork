@@ -169,6 +169,7 @@ struct TwoToolsClaudeTests {
         let survivorBefore = try Self.entries(both, where: isSurvivor)
         let userBefore = try Self.entries(both, where: isUser)
         let restBefore = try Self.withoutHooks(both)
+        #expect(try !Self.entries(both, where: isRemoved).isEmpty)
         #expect(!survivorBefore.isEmpty)
         #expect(userBefore.count == 2)
 
