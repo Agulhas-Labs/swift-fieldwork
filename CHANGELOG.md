@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.10.0
 
+- Added: `ClaudeMcpServer.hasLocalEntry(in:)` is public: whether any project in Claude Code's config holds a local-scope server of the tool's name. With `userEntry(in:)`, a tool's uninstall can tell whether there is anything for the removal to reach without reading Claude Code's config itself.
 - Added: the `fieldwork` Homebrew formula, which installs SwiftSure and SimWalk together and writes nothing to an agent's configuration. `Scripts/homebrew/make-formula.sh <tag> <out-dir>` generates it from `fieldwork.rb.template` for a release tag, with its checksum; `Scripts/homebrew/test-make-formula.sh` is its offline suite.
 
 ## 0.9.0
