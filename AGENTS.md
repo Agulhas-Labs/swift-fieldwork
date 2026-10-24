@@ -12,6 +12,7 @@ swift-fieldwork is a Swift package with one library, `Fieldwork`, depending on F
 - `swiftlint lint --strict` and `swiftformat Sources Tests Package.swift --lint` — style.
 - `sh Scripts/verify-tree.sh` — the privacy gate (`--rev <sha>` also reads that commit's metadata and message).
 - `sh Scripts/test-swift-test-gate.sh` and `sh Scripts/test-verify-tree.sh` — the two gates' self-tests.
+- `sh Scripts/homebrew/test-make-formula.sh` — the Homebrew formula generator's suite (offline).
 
 ## Docs
 - [.agents/CodingGuidelines.md](.agents/CodingGuidelines.md) — conventions specific to this repo.

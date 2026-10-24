@@ -11,7 +11,7 @@ set -u
 
 cd "$(git rev-parse --show-toplevel)" || exit 1
 
-for script in Scripts/test-swift-test-gate.sh Scripts/swift-test-gate.sh Scripts/test-verify-tree.sh Scripts/verify-tree.sh; do
+for script in Scripts/test-swift-test-gate.sh Scripts/swift-test-gate.sh Scripts/test-verify-tree.sh Scripts/verify-tree.sh Scripts/homebrew/test-make-formula.sh; do
   [ -f "$script" ] || { echo "pre-push: $script is missing, so the push is refused"; exit 1; }
 done
 
@@ -20,6 +20,9 @@ sh Scripts/test-swift-test-gate.sh || { echo "pre-push: the test gate's self-tes
 
 echo "==== swift test (strict, count checked) ===="
 sh Scripts/swift-test-gate.sh -Xswiftc -warnings-as-errors || { echo "pre-push: the test gate failed"; exit 1; }
+
+echo "==== formula generator self-test ===="
+sh Scripts/homebrew/test-make-formula.sh || { echo "pre-push: the formula generator's self-test failed"; exit 1; }
 
 echo "==== privacy gate self-test ===="
 sh Scripts/test-verify-tree.sh || { echo "pre-push: the privacy gate's self-test failed"; exit 1; }

@@ -23,7 +23,7 @@ Not here yet, and coming in a later release: the Codex install itself, merging t
 
 ## Status
 
-0.7.0; the API may change before 1.0.
+0.9.0; the API may change before 1.0.
 
 ## Usage
 
@@ -114,14 +114,14 @@ A Swift 6.2 toolchain and macOS 13 or later. Foundation only; no dependencies. `
 
 ## Install
 
-`brew install agulhas-labs/tap/fieldwork` installs both tools, SwiftSure and SimWalk. Each can still be installed alone: `agulhas-labs/tap/swift-sure`, `agulhas-labs/tap/simwalk`. Installing the package writes nothing to a coding agent's configuration until `swift-sure install` or `simwalk install` is run; either sets up both tools. `Scripts/homebrew/make-formula.sh <tag> <out-dir>` generates the formula.
+`brew install agulhas-labs/tap/fieldwork` installs both tools, SwiftSure and SimWalk. Each can still be installed alone: `agulhas-labs/tap/swift-sure`, `agulhas-labs/tap/simwalk`. Installing the package writes nothing to a coding agent's configuration until `swift-sure install` or `simwalk install` is run; either asks which agents to set up and sets up both tools in them (SimWalk does not support Codex yet). `Scripts/homebrew/make-formula.sh <tag> <out-dir>` generates the formula.
 
 ## Depending on it
 
-Version 0.7.0 is tagged. In `Package.swift`:
+Version 0.9.0 is tagged. In `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.7.0")
+.package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.9.0")
 ```
 
 and in the target that uses it, any of the libraries:

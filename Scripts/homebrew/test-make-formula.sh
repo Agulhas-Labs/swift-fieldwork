@@ -49,25 +49,31 @@ else
     fail "ruby is not installed, so the formula's syntax is unchecked"
 fi
 
+# refused <case> <message> <command...>: the command exits non-zero, and what it prints contains the message.
 refused() {
     NAME="$1"
-    shift
+    MESSAGE="$2"
+    shift 2
     OUTPUT="$("$@" 2>&1)"
     STATUS=$?
-    if [ "$STATUS" -ne 0 ] && [ -n "$OUTPUT" ]; then pass; else fail "$NAME: exit $STATUS, output '$OUTPUT'"; fi
+    case "$OUTPUT" in
+        *"$MESSAGE"*) SAID=yes ;;
+        *) SAID=no ;;
+    esac
+    if [ "$STATUS" -ne 0 ] && [ "$SAID" = yes ]; then pass; else fail "$NAME: exit $STATUS, output '$OUTPUT', expected '$MESSAGE'"; fi
 }
 export FIELDWORK_ARCHIVE="$TMP/archive.tar.gz"
-refused "no arguments" sh "$MAKE"
-refused "one argument" sh "$MAKE" 1.2.3
-refused "three arguments" sh "$MAKE" 1.2.3 "$TMP/out" extra
-refused "missing out-dir" sh "$MAKE" 1.2.3 "$TMP/nowhere"
-refused "tag with a v" sh "$MAKE" v1.2.3 "$TMP/out"
-refused "two-part tag" sh "$MAKE" 1.2 "$TMP/out"
-refused "four-part tag" sh "$MAKE" 1.2.3.4 "$TMP/out"
-refused "empty tag" sh "$MAKE" "" "$TMP/out"
-refused "tag with a suffix" sh "$MAKE" 1.2.3-rc1 "$TMP/out"
-refused "empty component" sh "$MAKE" 1..3 "$TMP/out"
-FIELDWORK_ARCHIVE="$TMP/absent.tar.gz" refused "missing archive" sh "$MAKE" 1.2.3 "$TMP/out"
+refused "no arguments" "usage: make-formula.sh" sh "$MAKE"
+refused "one argument" "usage: make-formula.sh" sh "$MAKE" 1.2.3
+refused "three arguments" "usage: make-formula.sh" sh "$MAKE" 1.2.3 "$TMP/out" extra
+refused "missing out-dir" "is not a directory" sh "$MAKE" 1.2.3 "$TMP/nowhere"
+refused "tag with a v" "is not a tag" sh "$MAKE" v1.2.3 "$TMP/out"
+refused "two-part tag" "is not a tag" sh "$MAKE" 1.2 "$TMP/out"
+refused "four-part tag" "is not a tag" sh "$MAKE" 1.2.3.4 "$TMP/out"
+refused "empty tag" "is not a tag" sh "$MAKE" "" "$TMP/out"
+refused "tag with a suffix" "is not a tag" sh "$MAKE" 1.2.3-rc1 "$TMP/out"
+refused "empty component" "is not a tag" sh "$MAKE" 1..3 "$TMP/out"
+FIELDWORK_ARCHIVE="$TMP/absent.tar.gz" refused "missing archive" "no archive at" sh "$MAKE" 1.2.3 "$TMP/out"
 
 if [ "$FAILED" -ne 0 ]; then
     echo "$FAILED of $((PASSED + FAILED)) cases failed"

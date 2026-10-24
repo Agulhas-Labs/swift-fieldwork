@@ -21,13 +21,15 @@ class Fieldwork < Formula
 
   def caveats
     <<~EOS
-      Installing this package does not write to any coding agent's configuration. To set up both tools in every
-      coding agent found, run either of:
+      Installing this package does not write to any coding agent's configuration. To set up both tools, run
+      either of:
 
         swift-sure install
         simwalk install
 
-      Each tool's install runs the other's, so one command is enough.
+      Each asks which coding agents to set up, then runs the other's install for the same agents, so one
+      command is enough. Without a terminal to ask on, pass --agent <name> or --yes. SimWalk does not
+      support Codex yet, so in Codex only SwiftSure is set up.
     EOS
   end
 
