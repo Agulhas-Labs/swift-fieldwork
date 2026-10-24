@@ -29,7 +29,7 @@ class Fieldwork < Formula
 
       Each asks which coding agents to set up, then runs the other's install for the same agents, so one
       command is enough. Without a terminal to ask on, pass --agent <name> or --yes. SimWalk does not
-      support Codex yet, so in Codex only SwiftSure is set up.
+      support Codex yet: run swift-sure install to set SwiftSure up there.
     EOS
   end
 
