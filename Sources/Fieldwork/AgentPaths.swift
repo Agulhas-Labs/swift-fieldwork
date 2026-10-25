@@ -108,5 +108,10 @@ public extension AgentPaths {
             self.directory = directory
             self.source = source
         }
+
+        /// The line every answer about this home opens with.
+        public var line: String {
+            "codex home: \(directory.path) (\(source))"
+        }
     }
 }

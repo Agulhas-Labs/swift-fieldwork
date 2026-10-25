@@ -9,13 +9,15 @@ final class FakeCodex: CodexMcpRunner, @unchecked Sendable {
     private let lock = NSLock()
     private let present: Bool
     private let getError: String?
+    private let addError: String?
     private var recorded: [Call] = []
     private var registered: (command: String, arguments: [String])?
 
-    init(present: Bool = true, server: (command: String, arguments: [String])? = nil, getError: String? = nil) {
+    init(present: Bool = true, server: (command: String, arguments: [String])? = nil, getError: String? = nil, addError: String? = nil) {
         self.present = present
         registered = server
         self.getError = getError
+        self.addError = addError
     }
 
     /// Every run so far, in order.
@@ -44,6 +46,9 @@ final class FakeCodex: CodexMcpRunner, @unchecked Sendable {
                 let json = (try? JSONSerialization.data(withJSONObject: shown)).map { String(bytes: $0, encoding: .utf8) ?? "" } ?? ""
                 return Subprocess.Output(succeeded: true, standardOutput: json)
             case ["mcp", "add"]:
+                if let addError {
+                    return Subprocess.Output(succeeded: false, standardOutput: "", standardError: addError)
+                }
                 let command = arguments.drop { $0 != "--" }.dropFirst()
                 registered = (command.first ?? "", Array(command.dropFirst()))
                 return Subprocess.Output(succeeded: true, standardOutput: "Added global MCP server 'gizmo'.")

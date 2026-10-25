@@ -1,8 +1,8 @@
 // Copyright 2026 Agulhas Labs
 // SPDX-License-Identifier: Apache-2.0
 
-/// What a Cursor hook install or uninstall did: the merge's ``InstallOutcome``, and every line to print for it.
-public struct CursorHookInstallResult: Equatable, Sendable {
+/// What a Cursor or Codex hook install or uninstall did: the merge's ``InstallOutcome``, and every line to print for it.
+public struct HookInstallResult: Equatable, Sendable {
     /// The merge's own outcome: its `lines` are the registration lines alone, so a consumer printing `printed` does not print `written` or `notes` again.
     public var outcome: InstallOutcome
     /// Everything to print, in order.
@@ -13,3 +13,6 @@ public struct CursorHookInstallResult: Equatable, Sendable {
         self.printed = printed
     }
 }
+
+/// The 0.10.0 name of ``HookInstallResult``.
+public typealias CursorHookInstallResult = HookInstallResult

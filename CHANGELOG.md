@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.11.0
+
+- Added: `CodexHooksFile`, the merge of a tool's hooks into Codex's `hooks.json`: its handlers are appended after any foreign group and rewritten in place on a binary move or a switch between two of its hook sets, so Codex's position-keyed trust holds, and removal leaves every foreign handler, group and key byte for byte.
+- Added: `CodexInstall`, a tool's install and uninstall for Codex: its hooks merged into the Codex home's `hooks.json` and its server registered, replaced or removed through `codex mcp`, a foreign server of the name and every foreign hook left alone. Its steps are public (`makeHome`, `hookLines`, `register`, `unregister`, `removeServer` and `manual`), so a tool that composes its own modes or cleanup says the same lines without a copy.
+- Added: `CodexHookInstaller`, which runs `CodexInstall` and returns a `HookInstallResult` whose `printed` is every line to print, starting with the Codex home, with the printing public as `printed(installing:home:)` and `printed(uninstalling:home:)`; `CodexInstallStep`, the Codex step of a tool's `install`, with `report(_:)` public; and `AgentPaths.CodexHome.line`, the line every answer about a home opens with.
+- Changed: `CursorHookInstallResult` is now `HookInstallResult`, since the Codex installer returns it too; the old name stays as a typealias.
+
 ## 0.10.0
 
 - Added: `ClaudeMcpServer.hasLocalEntry(in:)` is public: whether any project in Claude Code's config holds a local-scope server of the tool's name. With `userEntry(in:)`, a tool's uninstall can tell whether there is anything for the removal to reach without reading Claude Code's config itself.

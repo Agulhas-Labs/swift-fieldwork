@@ -34,7 +34,7 @@ public struct CursorHookInstaller: Equatable, Sendable {
     ///
     /// The result's `printed` is everything to print, in order: the merge's lines, each file written (indented), the notes, the restart step when something changed, then the unsupported lines and the experimental note. Its `outcome` is the merge's own, for a step report.
     @discardableResult
-    public func install(directory: URL, binary: String) throws -> CursorHookInstallResult {
+    public func install(directory: URL, binary: String) throws -> HookInstallResult {
         let outcome = try cursor.install(directory: directory, binary: binary, binaryWord: ShellWord.quoted(binary))
         var printed = Self.printable(outcome)
         if outcome.changed {
@@ -44,12 +44,12 @@ public struct CursorHookInstaller: Equatable, Sendable {
         if let experimental {
             printed.append(experimental)
         }
-        return CursorHookInstallResult(outcome: outcome, printed: printed)
+        return HookInstallResult(outcome: outcome, printed: printed)
     }
 
     /// Takes out what the install wrote in `directory`; the result's `printed` is everything to print, in order.
     @discardableResult
-    public func uninstall(directory: URL) throws -> CursorHookInstallResult {
+    public func uninstall(directory: URL) throws -> HookInstallResult {
         let outcome = try cursor.uninstall(directory: directory)
         var printed: [String] = []
         if outcome.lines.isEmpty {
@@ -59,7 +59,7 @@ public struct CursorHookInstaller: Equatable, Sendable {
         if outcome.changed {
             printed.append(Self.restartAfterRemoval)
         }
-        return CursorHookInstallResult(outcome: outcome, printed: printed)
+        return HookInstallResult(outcome: outcome, printed: printed)
     }
 
     private static func printable(_ outcome: InstallOutcome) -> [String] {
