@@ -31,26 +31,35 @@ public struct CodexInstall: Equatable, Sendable {
         let hooksURL = home.directory.appendingPathComponent(CodexHooksFile.fileName)
         let original = try SettingsFile.read(hooksURL, agent: Self.agent, flag: Self.directoryFlag)
         let merged = try SettingsFile.merge(hooksURL, agent: Self.agent) { try hooks.apply(to: original, binaryWord: binaryWord) }
-        // Codex refuses a CODEX_HOME that is not there, so the directory is made before it is asked anything.
-        do {
-            try FileManager.default.createDirectory(at: home.directory, withIntermediateDirectories: true)
-        } catch {
-            throw SettingsFile.Refused(path: home.directory.path, reason: "could not be made: \(error.localizedDescription)", agent: Self.agent)
-        }
+        try Self.makeHome(home)
         let found = try server.find(runner: runner, home: home.directory)
 
-        var outcome = InstallOutcome(lines: [], notes: [], written: [])
-        let wanted = hooks.hooks
-        if merged.changed {
-            outcome.lines += merged.replaced.map { "hooks: replaced stale registration (\($0))" }
-            outcome.lines += CodexHooksFile.movedEvents(from: original, to: merged.data).map { "hooks: \($0) groups after ours moved up; Codex will ask to trust them again" }
-            outcome.lines += wanted.map { "hooks: registered \($0.event) — \(hooks.command(for: $0, binaryWord: binaryWord))" }
-        } else {
-            outcome.lines.append("hooks: already registered — \(wanted.map(\.event).joined(separator: ", "))")
-        }
+        var outcome = InstallOutcome(lines: hookLines(merged, original: original, binaryWord: binaryWord), notes: [], written: [])
         try SettingsFile.write(&outcome, hooksURL, merged.data, original: original, if: merged.changed, tool: hooks.tool)
         try register(binary, found: found, home: home, runner: runner, into: &outcome)
         return outcome
+    }
+
+    /// Makes the Codex home before `codex` is asked anything, since Codex refuses a `CODEX_HOME` that is not there; a home that cannot be made is refused.
+    public static func makeHome(_ home: AgentPaths.CodexHome) throws {
+        do {
+            try FileManager.default.createDirectory(at: home.directory, withIntermediateDirectories: true)
+        } catch {
+            throw SettingsFile.Refused(path: home.directory.path, reason: "could not be made: \(error.localizedDescription)", agent: agent)
+        }
+    }
+
+    /// What an install says of `merged`, its change to the `original` bytes of `hooks.json`: each handler taken out, each repointed, each event whose later groups moved up, then each of `hooks` registered; or that all of them already were.
+    ///
+    /// Public so a tool that merges its own sets (taking another set's handlers out as it applies these) says so in the same lines.
+    public func hookLines(_ merged: CodexHooksFile.Change, original: Data?, binaryWord: String) -> [String] {
+        guard merged.changed else {
+            return ["hooks: already registered — \(hooks.hooks.map(\.event).joined(separator: ", "))"]
+        }
+        return merged.removed.map { "hooks: removed \($0)" }
+            + merged.replaced.map { "hooks: replaced stale registration (\($0))" }
+            + CodexHooksFile.movedEvents(from: original, to: merged.data).map { "hooks: \($0) groups after ours moved up; Codex will ask to trust them again" }
+            + hooks.hooks.map { "hooks: registered \($0.event) — \(hooks.command(for: $0, binaryWord: binaryWord))" }
     }
 
     /// Takes out what the install wrote, and nothing else: a foreign server of the name and every foreign hook stay, and a Codex home that is not there is not looked into.

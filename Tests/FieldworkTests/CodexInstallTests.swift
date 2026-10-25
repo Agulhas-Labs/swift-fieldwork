@@ -184,6 +184,67 @@ struct CodexInstallTests {
     }
 
     @Test
+    func aDroppedDuplicateGroupSaysTheGroupsAfterItMovedUp() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let home = Self.home(root)
+        try FileManager.default.createDirectory(at: home.directory, withIntermediateDirectories: true)
+        let ours = #"{"matcher": "*", "hooks": [{"type": "command", "command": "'/opt/My Tools/gizmo' pre-tool-use"}]}"#
+        try CodexTools.canonical(#"{"hooks": {"PreToolUse": [\#(ours), \#(ours), {"matcher": "*", "hooks": [{"type": "command", "command": "/usr/bin/audit"}]}]}}"#).write(to: Self.hooksURL(home))
+
+        let outcome = try run(home, FakeCodex())
+
+        #expect(outcome.lines == [
+            "hooks: PreToolUse groups after ours moved up; Codex will ask to trust them again",
+            "hooks: registered SessionStart — '/opt/My Tools/gizmo' session-start",
+            "hooks: registered PreToolUse — '/opt/My Tools/gizmo' pre-tool-use",
+            "hooks: registered PostToolUse — '/opt/My Tools/gizmo' post-tool-use",
+            "mcp: registered gizmo — /opt/My Tools/gizmo mcp",
+        ])
+    }
+
+    @Test
+    func theUninstallWithoutCodexNotesTheServerOnlyWhenItTookHooksOut() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let home = Self.home(root)
+        _ = try run(home, FakeCodex())
+        let missing = "mcp: not checked — `codex` is not on PATH; if Codex runs this tool's server, run: CODEX_HOME=\(home.directory.path) codex mcp remove gizmo"
+
+        let first = try Self.install.uninstall(home: home, runner: FakeCodex(present: false))
+        let second = try Self.install.uninstall(home: home, runner: FakeCodex(present: false))
+
+        #expect(first.notes == [missing])
+        #expect(second.notes.isEmpty)
+    }
+
+    @Test
+    func aServerLookupThatFailsWritesNoHooks() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let home = Self.home(root)
+
+        #expect(throws: SettingsFile.Refused.self) { try run(home, FakeCodex(getError: "boom")) }
+
+        #expect(!FileManager.default.fileExists(atPath: Self.hooksURL(home).path))
+    }
+
+    @Test
+    func hookLinesSayEachRemovalBeforeTheRegistrations() {
+        let merged = CodexHooksFile.Change(data: Data(), changed: true, replaced: ["/old/gizmo pre-tool-use"], removed: ["PreToolUse — '/opt/My Tools/gizmo' pre-tool-use --other"])
+
+        let lines = Self.install.hookLines(merged, original: nil, binaryWord: Self.word)
+
+        #expect(lines == [
+            "hooks: removed PreToolUse — '/opt/My Tools/gizmo' pre-tool-use --other",
+            "hooks: replaced stale registration (/old/gizmo pre-tool-use)",
+            "hooks: registered SessionStart — '/opt/My Tools/gizmo' session-start",
+            "hooks: registered PreToolUse — '/opt/My Tools/gizmo' pre-tool-use",
+            "hooks: registered PostToolUse — '/opt/My Tools/gizmo' post-tool-use",
+        ])
+    }
+
+    @Test
     func unregisterRemovesOursAndNotesAMissingCodexOnlyWhenAsked() throws {
         let root = try TemporaryDirectory()
         defer { root.remove() }
