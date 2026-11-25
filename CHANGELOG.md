@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added: the profiler's health stage ends with a paired timing check. Once the bisection has settled which services to keep on, it boots the device stock and slim in turn, twice, and refuses the profile when the slim boot is slower than the stock boot just before it at the same step (install and launch, or the UI test) in both pairs, by more than 5 s or a tenth of the stock time. The per-trial check compares with the worst of the stock baselines, so under load a delay every app launch pays slipped under it: 0.12.0's profiles switched off `com.apple.gamed`, which doubled a UI test's time and passed. `HealthCheck.slowerInEveryPair(_:installing:)` and `HealthCheck.timingTolerance(stock:)` are the verdict, and a profile records the check as `paired-timing`.
+
 ## 0.12.1
 
 - Fixed: both bundled profiles switched off `com.apple.gamed`, and with it off every app launch waits about 10 s for it: a UI test that takes 19 s on a stock iOS 27.2 simulator took 39 s slim. It is now an infrastructure service, kept on in every profile, and a test checks that no bundled profile switches one off. The iOS 27.0 profile now switches off 93 services and the iOS 27.2 profile 94.

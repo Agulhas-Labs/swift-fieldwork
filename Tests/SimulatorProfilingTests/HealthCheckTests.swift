@@ -95,8 +95,8 @@ struct HealthCheckTests {
     }
 
     @Test func `check names say launch where no app is installed`() {
-        #expect(HealthCheck.checkNames(installing: false, testing: false) == ["boot", "read-back", "launch", "log-flood", "respawn"])
-        #expect(HealthCheck.checkNames(installing: true, testing: true) == ["boot", "read-back", "install-launch", "ui-test-runner", "log-flood", "respawn"])
+        #expect(HealthCheck.checkNames(installing: false, testing: false) == ["boot", "read-back", "launch", "log-flood", "respawn", "paired-timing"])
+        #expect(HealthCheck.checkNames(installing: true, testing: true) == ["boot", "read-back", "install-launch", "ui-test-runner", "log-flood", "respawn", "paired-timing"])
         #expect(HealthFailure.installLaunch.name(installing: false) == "launch")
         #expect(HealthFailure.installLaunch.name(installing: true) == "install-launch")
     }

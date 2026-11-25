@@ -111,6 +111,35 @@ public enum HealthCheck {
 
     /// The checks a run makes, by the names a profile records.
     public static func checkNames(installing: Bool, testing: Bool) -> [String] {
-        ["boot", "read-back", installing ? "install-launch" : "launch"] + (testing ? ["ui-test-runner"] : []) + ["log-flood", "respawn"]
+        ["boot", "read-back", installing ? "install-launch" : "launch"] + (testing ? ["ui-test-runner"] : []) + ["log-flood", "respawn", "paired-timing"]
+    }
+
+    /// The timed steps the slim boot was slower at in every pair, by the names a profile records: `install-launch` (or
+    /// `launch`) and `ui-test-runner`.
+    ///
+    /// `evaluate` compares a trial with the worst stock boot, which under load can be tens of seconds slower than a
+    /// typical one, so a delay that every app launch pays slips under it. Each pair here is a stock boot and a slim
+    /// boot run back to back on one device, so the load is about the same for both; a step counts only when the slim
+    /// boot was slower by more than `timingTolerance(stock:)` in every pair, since one slow boot is noise.
+    public static func slowerInEveryPair(_ pairs: [(stock: TrialMeasurement, slim: TrialMeasurement)], installing: Bool) -> [String] {
+        guard !pairs.isEmpty else { return [] }
+        let steps: [(String, KeyPath<TrialMeasurement, Double?>)] = [
+            (HealthFailure.installLaunch.name(installing: installing), \.launchSeconds),
+            (HealthFailure.uiTestRunner.name(installing: installing), \.uiTestSeconds),
+        ]
+        return steps.compactMap { name, seconds in
+            let slower = pairs.allSatisfy { pair in
+                guard let stock = pair.stock[keyPath: seconds], let slim = pair.slim[keyPath: seconds] else { return false }
+                return slim - stock > timingTolerance(stock: stock)
+            }
+            return slower ? name : nil
+        }
+    }
+
+    /// How much slower than the stock boot of its pair a slim boot may take at one step: 5 s, or a tenth of the stock
+    /// time where that is more. A switched-off service that every app launch waits for (`com.apple.gamed`, about 10 s
+    /// a launch) is over it at any load.
+    public static func timingTolerance(stock: Double) -> Double {
+        max(5, stock * 0.1)
     }
 }

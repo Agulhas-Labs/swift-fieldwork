@@ -81,7 +81,40 @@ enum HealthStage {
             return !failures.isEmpty
         }
         ProfileCommand.log("health: keep on \(kept.count): \(kept.joined(separator: ", "))")
+        try checkTiming(disabling: candidates.filter { !kept.contains($0) }, runner: runner)
         return kept
+    }
+
+    /// The number of stock and slim pairs the timing check boots.
+    static let timingPairs = 2
+
+    /// Boots the device stock and slim in turn, `timingPairs` times, and throws when the slim boot is slower at the
+    /// same step in every pair (`HealthCheck.slowerInEveryPair`).
+    private static func checkTiming(disabling slim: [String], runner: TrialRunner) throws {
+        guard !slim.isEmpty else { return }
+        var pairs: [(stock: TrialMeasurement, slim: TrialMeasurement)] = []
+        for number in 1 ... timingPairs {
+            let stockTrial = try runner.run(disabled: [])
+            guard stockTrial.bootSeconds != nil, stockTrial.launchPassed, stockTrial.uiTestPassed else {
+                throw HealthStageError(description: "timing pair \(number): the stock device failed its own health check, so the timing cannot be compared; run again on a quieter machine")
+            }
+            let slimTrial = try runner.run(disabled: slim)
+            guard slimTrial.bootSeconds != nil, slimTrial.launchPassed, slimTrial.uiTestPassed else {
+                throw HealthStageError(description: "timing pair \(number): the device with \(slim.count) services off failed a boot, launch or UI test that its bisection trial passed; run the health stage again")
+            }
+            ProfileCommand.log("timing: pair \(number) of \(timingPairs), stock \(timings(stockTrial)), slim \(timings(slimTrial))")
+            pairs.append((stockTrial, slimTrial))
+        }
+        let slower = HealthCheck.slowerInEveryPair(pairs, installing: runner.installs)
+        guard slower.isEmpty else {
+            throw HealthStageError(description: "with \(slim.count) services off the device is slower than stock in every pair at \(slower.joined(separator: ", ")): a service it switches off is one that step waits for; find it with --candidates and a smaller set, and keep it on")
+        }
+        ProfileCommand.log("timing: \(slim.count) off is as fast as stock in \(timingPairs) pairs")
+    }
+
+    private static func timings(_ trial: TrialMeasurement) -> String {
+        let format = { (seconds: Double?) in seconds.map { String(format: "%.1f", $0) } ?? "-" }
+        return "launch \(format(trial.launchSeconds)) s, ui test \(format(trial.uiTestSeconds)) s"
     }
 
     /// The candidates left once the labels serving the kept capabilities are taken out.
