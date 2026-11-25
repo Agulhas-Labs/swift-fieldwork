@@ -1376,7 +1376,7 @@ extension ServiceProfiles {
         },
         {
           "cpuSeconds" : 1.97,
-          "disposition" : "disable",
+          "disposition" : "infrastructure",
           "domain" : "daemon",
           "label" : "com.apple.gamed",
           "peakFootprintMB" : 11,

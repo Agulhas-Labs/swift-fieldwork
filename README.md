@@ -51,7 +51,7 @@ if case let .ask(agents) = selection {
 
 ## Simulator services
 
-`SimulatorServices` boots an iOS simulator *slim*: with the system services a project does not need switched off. A stock iOS 27.0 simulator starts 163 of its runtime's 338 services at boot, and a UI test suite touches few of them; the iOS 27.0 profile switches off 94, and the iOS 27.2 profile 95.
+`SimulatorServices` boots an iOS simulator *slim*: with the system services a project does not need switched off. A stock iOS 27.0 simulator starts 163 of its runtime's 338 services at boot, and a UI test suite touches few of them; the iOS 27.0 profile switches off 93, and the iOS 27.2 profile 94.
 
 - `ServiceProfiles.profile(forRuntime:)`: the measured profile for a simulator runtime, or nil, in which case boot stock. Profiles ship as Swift source, so a tool that links the library carries them in its binary. iOS 27.0 and iOS 27.2 are bundled. A runtime with no bundled profile uses one measured on this machine: the file `<runtime identifier>.json` in `~/.config/fieldwork/service-profiles/`, or in `$FIELDWORK_SERVICE_PROFILES` when that holds an absolute path. A local file that does not decode, is in a newer format or is for another runtime is refused, and the tool boots stock. `ServiceProfiles.resolve(forRuntime:)` answers where a profile came from (`ProfileSource`) or why a local file was refused, for a caller that wants to say so.
 - `ProjectDeclarations`: what a project declares (entitlement keys, Info.plist keys, background modes, a StoreKit configuration), the `Capability` values those call for, and `unmapped`, the declarations no rule accounts for. While `unmapped` is not empty, boot stock: what those keys need is unknown.
