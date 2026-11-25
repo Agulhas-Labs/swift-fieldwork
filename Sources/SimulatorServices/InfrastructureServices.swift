@@ -17,6 +17,8 @@ public enum InfrastructureServices {
         "com.apple.accountsd", "com.apple.systemstatusd", "com.apple.UserEventAgent-System", "com.apple.notifyd",
         "com.apple.distnoted", "com.apple.logd", "com.apple.diagnosticd", "com.apple.configd_sim",
         "com.apple.CoreSimulator", "com.apple.testmanagerd", "com.apple.dt",
+        // Not needed to run, but every app launch waits about 10 s for it when it is off: a 19 s UI test took 39 s on iOS 27.2.
+        "com.apple.gamed",
     ]
 
     /// Whether `label` is one of the stems or starts with one and a dot.

@@ -17,9 +17,16 @@ struct InfrastructureServicesTests {
         #expect(!InfrastructureServices.matches("com.apple.weatherd"))
     }
 
-    @Test func `the list holds the thirty-two stems`() {
-        #expect(InfrastructureServices.stems.count == 32)
-        #expect(Set(InfrastructureServices.stems).count == 32)
+    @Test func `the list holds the thirty-three stems`() {
+        #expect(InfrastructureServices.stems.count == 33)
+        #expect(Set(InfrastructureServices.stems).count == 33)
+    }
+
+    @Test(arguments: ["com.apple.CoreSimulator.SimRuntime.iOS-27-0", "com.apple.CoreSimulator.SimRuntime.iOS-27-2"])
+    func `no bundled profile switches an infrastructure service off`(runtime: String) throws {
+        let profile = try #require(ServiceProfiles.profile(forRuntime: runtime))
+        #expect(profile.disabledLabels.filter(InfrastructureServices.matches).isEmpty)
+        #expect(!profile.disabledLabels.contains("com.apple.gamed"))
     }
 
     @Test func `the new disposition is written as its name`() throws {
