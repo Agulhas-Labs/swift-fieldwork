@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added: the iOS 27.2 service profile: 338 services, 95 switched off, 3 kept on for HealthKit and 6 left on because no trial had them off (`Disposition.unchecked`). A stock 27.2 simulator now boots slim.
 - Added: `DisabledServicesOverride.ownedLabels(for:)`, the labels this library switched off and `restore` would put back, not counting another writer's entries.
 - Added: `DisabledServicesOverride.restore(for:)` puts back exactly what was there before the library's writes, from a record it keeps beside the file, and leaves foreign entries and the directory alone. The record survives a write interrupted at any point, a label written twice keeps its first prior, a write or restore that leaves the file with no entries deletes it, and an unreadable file or record throws `SimulatorServicesError.unreadableOverride` instead of counting as empty; `labels(for:)` throws it too, where it returned an empty set.
 - Changed: `DisabledServicesOverride.write` replaces its own earlier set instead of only adding: a label it no longer lists goes back to its prior state.

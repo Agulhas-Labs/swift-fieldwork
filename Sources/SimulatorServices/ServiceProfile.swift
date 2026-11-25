@@ -250,5 +250,6 @@ public enum ServiceProfiles {
     /// A profile file `iOS27Point0.swift` adds `static let iOS27Point0: [String: String] = [...]` in an extension, and registers it by adding its name to this list: the one edit to this file.
     private static let sources: [[String: String]] = [
         iOS27Point0,
+        iOS27Point2,
     ]
 }
