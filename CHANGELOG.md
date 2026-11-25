@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.12.0
 
 - Added: the iOS 27.2 service profile: 338 services, 95 switched off, 3 kept on for HealthKit and 6 left on because no trial had them off (`Disposition.unchecked`). A stock 27.2 simulator now boots slim.
 - Added: `DisabledServicesOverride.ownedLabels(for:)`, the labels this library switched off and `restore` would put back, not counting another writer's entries.
