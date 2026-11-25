@@ -11,4 +11,6 @@ public enum SimulatorServicesError: Error, Equatable {
     case commandFailed(command: String, standardError: String)
     /// A profile written in a newer format than this library reads.
     case unsupportedSchema(found: Int, supported: Int)
+    /// A disabled-services file or its record exists but cannot be read as one, so nothing was changed.
+    case unreadableOverride(path: String, reason: String)
 }

@@ -126,6 +126,140 @@ struct DisabledServicesOverrideTests {
         #expect(try plist(override) == ["com.example.foreign": true])
     }
 
+    @Test(arguments: [DisabledServicesOverride.WriteStep.recordSaved, .overrideSaved])
+    func aWriteInterruptedAtAnyPointStillRestoresExactly(step: DisabledServicesOverride.WriteStep) throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let override = DisabledServicesOverride(root: root.url)
+        let original = ["com.example.foreign": true, "com.example.b": false]
+        try seed(override, original)
+        try override.write(["com.example.a", "com.example.b"], for: udid)
+        #expect(throws: Interrupted.self) { try interrupted(at: step, root: root.url).write(["com.example.b", "com.example.c"], for: udid) }
+        try override.restore(for: udid)
+        #expect(try plist(override) == original)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: override.directory(for: udid).path) == ["disabled.plist"])
+    }
+
+    @Test(arguments: [DisabledServicesOverride.WriteStep.recordSaved, .overrideSaved])
+    func aRetriedWriteAfterAnInterruptionStillRestoresExactly(step: DisabledServicesOverride.WriteStep) throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let override = DisabledServicesOverride(root: root.url)
+        let original = ["com.example.foreign": true, "com.example.b": false]
+        try seed(override, original)
+        try override.write(["com.example.a", "com.example.b"], for: udid)
+        #expect(throws: Interrupted.self) { try interrupted(at: step, root: root.url).write(["com.example.b", "com.example.c"], for: udid) }
+        try override.write(["com.example.b", "com.example.c"], for: udid)
+        #expect(try override.labels(for: udid) == ["com.example.foreign", "com.example.b", "com.example.c"])
+        try override.restore(for: udid)
+        #expect(try plist(override) == original)
+    }
+
+    @Test
+    func aRepeatedWriteKeepsTheFirstPriorFalse() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let override = DisabledServicesOverride(root: root.url)
+        try seed(override, ["com.example.b": false])
+        try override.write(["com.example.b"], for: udid)
+        try override.write(["com.example.b"], for: udid)
+        try override.restore(for: udid)
+        #expect(try plist(override) == ["com.example.b": false])
+    }
+
+    @Test
+    func aRepeatedWriteKeepsTheFirstPriorAbsence() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let override = DisabledServicesOverride(root: root.url)
+        try override.write(["com.example.a"], for: udid)
+        try override.write(["com.example.a"], for: udid)
+        try override.restore(for: udid)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: override.directory(for: udid).path).isEmpty)
+    }
+
+    @Test
+    func anEmptyWriteOnAFreshDeviceLeavesNoFiles() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let override = DisabledServicesOverride(root: root.url)
+        try override.write([], for: udid)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: override.directory(for: udid).path).isEmpty)
+    }
+
+    @Test
+    func anEmptiedSetThenRestoreLeavesNoFiles() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let override = DisabledServicesOverride(root: root.url)
+        try override.write(["com.example.a"], for: udid)
+        try override.write([], for: udid)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: override.directory(for: udid).path).isEmpty)
+        try override.restore(for: udid)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: override.directory(for: udid).path).isEmpty)
+    }
+
+    @Test
+    func restoreDeletesAnEntrylessFileItDoesNotOwn() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let override = DisabledServicesOverride(root: root.url)
+        try seed(override, [:])
+        try override.restore(for: udid)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: override.directory(for: udid).path).isEmpty)
+    }
+
+    @Test(arguments: try [
+        Data("garbage".utf8),
+        PropertyListSerialization.data(fromPropertyList: ["com.example.a"], format: .xml, options: 0),
+        PropertyListSerialization.data(fromPropertyList: ["com.example.a": "maybe"], format: .xml, options: 0),
+    ])
+    func anUnreadableRecordThrowsAndChangesNothing(record: Data) throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let override = DisabledServicesOverride(root: root.url)
+        try seed(override, ["com.example.a": true])
+        let directory = try override.directory(for: udid)
+        let sidecar = directory.appendingPathComponent("fieldwork-disabled.plist")
+        try record.write(to: sidecar)
+        let before = try Data(contentsOf: directory.appendingPathComponent("disabled.plist"))
+        for change in [{ try override.write(["com.example.b"], for: udid) }, { try override.restore(for: udid) }] {
+            let error = #expect(throws: SimulatorServicesError.self) { try change() }
+            guard case let .unreadableOverride(path, _)? = error else {
+                Issue.record("expected unreadableOverride, got \(String(describing: error))")
+                continue
+            }
+            #expect(path == sidecar.path)
+            #expect(try Data(contentsOf: directory.appendingPathComponent("disabled.plist")) == before)
+            #expect(try Data(contentsOf: sidecar) == record)
+        }
+    }
+
+    @Test
+    func anUnreadableFileThrowsAndChangesNothing() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let override = DisabledServicesOverride(root: root.url)
+        let directory = try override.directory(for: udid)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let target = directory.appendingPathComponent("disabled.plist")
+        try Data("garbage".utf8).write(to: target)
+        #expect(throws: SimulatorServicesError.self) { try override.write(["com.example.b"], for: udid) }
+        #expect(throws: SimulatorServicesError.self) { try override.restore(for: udid) }
+        #expect(try Data(contentsOf: target) == Data("garbage".utf8))
+        #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path) == ["disabled.plist"])
+    }
+
+    private struct Interrupted: Error {}
+
+    private func interrupted(at step: DisabledServicesOverride.WriteStep, root: URL) -> DisabledServicesOverride {
+        DisabledServicesOverride(root: root) { reached in
+            if reached == step {
+                throw Interrupted()
+            }
+        }
+    }
+
     private func seed(_ override: DisabledServicesOverride, _ entries: [String: Bool]) throws {
         let directory = try override.directory(for: udid)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

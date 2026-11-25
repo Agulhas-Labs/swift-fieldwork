@@ -185,7 +185,6 @@ public struct ServiceProfile: Codable, Sendable, Equatable {
     }
 }
 
-/// The profiles that ship with the library.
 /// Where a resolved profile came from.
 public enum ProfileSource: Sendable, Equatable {
     /// Shipped in the library.
@@ -212,6 +211,7 @@ public enum ProfileResolution: Sendable {
     }
 }
 
+/// The profiles that ship with the library.
 public enum ServiceProfiles {
     /// The profile for a runtime: the bundled one, else one measured on this machine, or nil, in which case boot stock.
     public static func profile(forRuntime identifier: String) -> ServiceProfile? {
