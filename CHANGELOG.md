@@ -4,6 +4,8 @@
 
 - Added: `DisabledServicesOverride.restore(for:)` puts back exactly what was there before the library's writes, from a record it keeps beside the file, and leaves foreign entries and the directory alone.
 - Changed: `DisabledServicesOverride.write` replaces its own earlier set instead of only adding: a label it no longer lists goes back to its prior state.
+- Added: a runtime with no bundled profile uses one measured on the machine. `ServiceProfiles.resolve(forRuntime:environment:)` returns a `ProfileResolution` (`found` with its `ProfileSource`, `bundled` or `local(URL)`; `none`; or `unreadable` with the reason) and `ServiceProfiles.localDirectory(environment:)` names the directory (`FIELDWORK_SERVICE_PROFILES` when absolute, else `~/.config/fieldwork/service-profiles`), where `<runtime identifier>.json` is a profile. A bundled profile wins; a local file that does not decode, is in a newer format or is for another runtime is refused. `profile(forRuntime:)` keeps its signature and now reads local files too.
+- Added: `simulator-profile --install` writes the measured profile to that directory (`ProfileInstall.install`), atomically.
 
 ## 0.11.0
 

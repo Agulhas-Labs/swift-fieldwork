@@ -76,16 +76,18 @@ struct DeviceAndOptionsTests {
         #expect(defaults.cpuThresholdSeconds == 0.5)
         #expect(defaults.profileVersion == 1)
         #expect(!defaults.allowBooted)
+        #expect(!defaults.install)
 
         let all = try ProfileOptions.parse([
             "--runtime", "r", "--device-type", "d", "--out", "p.json", "--window", "60", "--footprint-threshold", "8",
-            "--cpu-threshold", "1.5", "--profile-version", "3", "--allow-booted",
+            "--cpu-threshold", "1.5", "--profile-version", "3", "--allow-booted", "--install",
         ])
         #expect(all.window == 60)
         #expect(all.footprintThresholdMB == 8)
         #expect(all.cpuThresholdSeconds == 1.5)
         #expect(all.profileVersion == 3)
         #expect(all.allowBooted)
+        #expect(all.install)
     }
 
     @Test func `a command line that cannot be used is refused with a reason`() {
