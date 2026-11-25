@@ -22,26 +22,44 @@ public struct DisabledServicesOverride: Sendable {
         return root.appendingPathComponent("com.apple.CoreSimulator.SimDevice.\(uuid.uuidString)", isDirectory: true)
     }
 
-    /// Switches `labels` off for the device, keeping any entries the file already has.
+    /// Switches exactly `labels` off for the device, as the labels this library owns there: a label an earlier write switched off and this one omits goes back to what it was before.
+    /// Entries the library never touched are left as they are. The prior state of each label it takes over is recorded in a sidecar file, which `restore(for:)` reads.
     public func write(_ labels: [String], for udid: String) throws {
         let directory = try directory(for: udid)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         var entries = try existingEntries(in: directory)
+        var owned = try ownedEntries(in: directory)
+        for label in owned.keys where !labels.contains(label) {
+            put(back: owned[label], label: label, in: &entries)
+            owned[label] = nil
+        }
         for label in labels {
+            if owned[label] == nil {
+                owned[label] = entries[label] as? Bool ?? Self.absent
+            }
             entries[label] = true
         }
-        let data = try PropertyListSerialization.data(fromPropertyList: entries, format: .xml, options: 0)
-        let temporary = directory.appendingPathComponent(".disabled-\(UUID().uuidString).tmp")
-        do {
-            try data.write(to: temporary)
-            try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: temporary.path)
-            guard rename(temporary.path, target(in: directory).path) == 0 else {
-                throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        try save(entries, to: target(in: directory), in: directory)
+        try save(owned, to: sidecar(in: directory), in: directory)
+    }
+
+    /// Puts every label this library switched off back to its state before the first write, and deletes the record of them; foreign entries and the directory stay.
+    /// `launchd_sim` reads the file when the device boots, so a restore takes effect at the device's next boot.
+    public func restore(for udid: String) throws {
+        let directory = try directory(for: udid)
+        let owned = try ownedEntries(in: directory)
+        if !owned.isEmpty {
+            var entries = try existingEntries(in: directory)
+            for (label, prior) in owned {
+                put(back: prior, label: label, in: &entries)
             }
-        } catch {
-            try? FileManager.default.removeItem(at: temporary)
-            throw error
+            if entries.isEmpty {
+                try removeIfPresent(target(in: directory))
+            } else {
+                try save(entries, to: target(in: directory), in: directory)
+            }
         }
+        try removeIfPresent(sidecar(in: directory))
     }
 
     /// The labels the device's file switches off; none where it has no file.
@@ -80,6 +98,46 @@ public struct DisabledServicesOverride: Sendable {
             throw SimulatorServicesError.commandFailed(command: "xcrun simctl spawn launchctl print-disabled system", standardError: output.standardError)
         }
         return disabledLabels(fromPrintDisabled: output.standardOutput)
+    }
+
+    private static let absent = "absent"
+
+    private func put(back prior: Any?, label: String, in entries: inout [String: Any]) {
+        if let bool = prior as? Bool {
+            entries[label] = bool
+        } else {
+            entries[label] = nil
+        }
+    }
+
+    private func removeIfPresent(_ url: URL) throws {
+        if FileManager.default.fileExists(atPath: url.path) {
+            try FileManager.default.removeItem(at: url)
+        }
+    }
+
+    private func save(_ dictionary: [String: Any], to destination: URL, in directory: URL) throws {
+        let data = try PropertyListSerialization.data(fromPropertyList: dictionary, format: .xml, options: 0)
+        let temporary = directory.appendingPathComponent(".disabled-\(UUID().uuidString).tmp")
+        do {
+            try data.write(to: temporary)
+            try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: temporary.path)
+            guard rename(temporary.path, destination.path) == 0 else {
+                throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+            }
+        } catch {
+            try? FileManager.default.removeItem(at: temporary)
+            throw error
+        }
+    }
+
+    private func sidecar(in directory: URL) -> URL {
+        directory.appendingPathComponent("fieldwork-disabled.plist")
+    }
+
+    private func ownedEntries(in directory: URL) throws -> [String: Any] {
+        guard let data = try? Data(contentsOf: sidecar(in: directory)) else { return [:] }
+        return try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any] ?? [:]
     }
 
     private func target(in directory: URL) -> URL {

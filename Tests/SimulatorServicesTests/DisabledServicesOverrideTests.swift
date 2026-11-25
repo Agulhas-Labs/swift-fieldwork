@@ -47,7 +47,7 @@ struct DisabledServicesOverrideTests {
         let directory = try override.directory(for: udid)
         let attributes = try FileManager.default.attributesOfItem(atPath: directory.appendingPathComponent("disabled.plist").path)
         #expect((attributes[.posixPermissions] as? NSNumber)?.intValue == 0o644)
-        #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path) == ["disabled.plist"])
+        #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).sorted() == ["disabled.plist", "fieldwork-disabled.plist"])
     }
 
     @Test
@@ -70,6 +70,74 @@ struct DisabledServicesOverrideTests {
     }
 
     @Test
+    func aLaterWriteSwitchesBackOnWhatItNoLongerLists() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let override = DisabledServicesOverride(root: root.url)
+        try override.write(["com.example.a", "com.example.b"], for: udid)
+        try override.write(["com.example.a"], for: udid)
+        #expect(try override.labels(for: udid) == ["com.example.a"])
+        #expect(try plist(override).keys.sorted() == ["com.example.a"])
+    }
+
+    @Test
+    func aLaterWriteRestoresAPriorFalseEntry() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let override = DisabledServicesOverride(root: root.url)
+        try seed(override, ["com.example.b": false])
+        try override.write(["com.example.a", "com.example.b"], for: udid)
+        try override.write(["com.example.a"], for: udid)
+        #expect(try plist(override)["com.example.b"] == false)
+    }
+
+    @Test
+    func restorePutsBackExactlyWhatWasThere() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let override = DisabledServicesOverride(root: root.url)
+        try seed(override, ["com.example.foreign": true, "com.example.b": false, "com.example.c": true])
+        try override.write(["com.example.a", "com.example.b", "com.example.c"], for: udid)
+        try override.restore(for: udid)
+        #expect(try plist(override) == ["com.example.foreign": true, "com.example.b": false, "com.example.c": true])
+        #expect(try FileManager.default.contentsOfDirectory(atPath: override.directory(for: udid).path) == ["disabled.plist"])
+    }
+
+    @Test
+    func restoreOfAnOnlyWrittenFileDeletesThePlistButNotTheDirectory() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let override = DisabledServicesOverride(root: root.url)
+        try override.write(["com.example.a"], for: udid)
+        try override.restore(for: udid)
+        let directory = try override.directory(for: udid)
+        #expect(FileManager.default.fileExists(atPath: directory.path))
+        #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).isEmpty)
+    }
+
+    @Test
+    func restoreWithNothingWrittenIsANoOp() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let override = DisabledServicesOverride(root: root.url)
+        try override.restore(for: udid)
+        try seed(override, ["com.example.foreign": true])
+        try override.restore(for: udid)
+        #expect(try plist(override) == ["com.example.foreign": true])
+    }
+
+    private func seed(_ override: DisabledServicesOverride, _ entries: [String: Bool]) throws {
+        let directory = try override.directory(for: udid)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try PropertyListSerialization.data(fromPropertyList: entries, format: .xml, options: 0).write(to: directory.appendingPathComponent("disabled.plist"))
+    }
+
+    private func plist(_ override: DisabledServicesOverride) throws -> [String: Bool] {
+        let data = try Data(contentsOf: override.directory(for: udid).appendingPathComponent("disabled.plist"))
+        return try #require(try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Bool])
+    }
+
+    @Test
     func anInvalidUDIDIsRefusedEverywhere() throws {
         let root = try TemporaryDirectory()
         defer { root.remove() }
@@ -77,6 +145,7 @@ struct DisabledServicesOverrideTests {
         #expect(throws: SimulatorServicesError.invalidUDID("../x")) { try override.directory(for: "../x") }
         #expect(throws: SimulatorServicesError.invalidUDID("../x")) { try override.write(["a"], for: "../x") }
         #expect(throws: SimulatorServicesError.invalidUDID("../x")) { try override.remove(for: "../x") }
+        #expect(throws: SimulatorServicesError.invalidUDID("../x")) { try override.restore(for: "../x") }
         #expect(throws: SimulatorServicesError.invalidUDID("../x")) { try DisabledServicesOverride.readBack(udid: "../x") }
         #expect(try FileManager.default.contentsOfDirectory(atPath: root.url.path).isEmpty)
     }

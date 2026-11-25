@@ -56,7 +56,7 @@ if case let .ask(agents) = selection {
 - `ServiceProfiles.profile(forRuntime:)`: the measured profile for a simulator runtime, or nil, in which case boot stock. Profiles ship as Swift source, so a tool that links the library carries them in its binary. iOS 27.0 is the first.
 - `ProjectDeclarations`: what a project declares (entitlement keys, Info.plist keys, background modes, a StoreKit configuration), the `Capability` values those call for, and `unmapped`, the declarations no rule accounts for. While `unmapped` is not empty, boot stock: what those keys need is unknown.
 - `ServiceProfile.plan(keeping:)`: the labels to switch off, less the services of the capabilities kept. The margin is the declaration, not the use: a project that declares HealthKit keeps every HealthKit service on, whether or not a test reaches one.
-- `DisabledServicesOverride`: writes the per-device file the simulator's launchd reads at boot (merged with what is there, written atomically), reads the disabled list back from the booted device, and removes the device's directory once the device is deleted, which `simctl delete` does not.
+- `DisabledServicesOverride`: writes the per-device file the simulator's launchd reads at boot (merged with what is there, written atomically; a later write replaces the earlier set, switching back on what it no longer lists, and `restore(for:)` puts back exactly what was there before), reads the disabled list back from the booted device, and removes the device's directory once the device is deleted, which `simctl delete` does not.
 
 ```swift
 import SimulatorServices

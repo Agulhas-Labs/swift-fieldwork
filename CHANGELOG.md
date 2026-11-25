@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added: `DisabledServicesOverride.restore(for:)` puts back exactly what was there before the library's writes, from a record it keeps beside the file, and leaves foreign entries and the directory alone.
+- Changed: `DisabledServicesOverride.write` replaces its own earlier set instead of only adding: a label it no longer lists goes back to its prior state.
+
 ## 0.11.0
 
 - Added: `CodexHooksFile`, the merge of a tool's hooks into Codex's `hooks.json`: its handlers are appended after any foreign group and rewritten in place on a binary move or a switch between two of its hook sets, so Codex's position-keyed trust holds, and removal leaves every foreign handler, group and key byte for byte.
