@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.12.1
 
 - Fixed: both bundled profiles switched off `com.apple.gamed`, and with it off every app launch waits about 10 s for it: a UI test that takes 19 s on a stock iOS 27.2 simulator took 39 s slim. It is now an infrastructure service, kept on in every profile, and a test checks that no bundled profile switches one off. The iOS 27.0 profile now switches off 93 services and the iOS 27.2 profile 94.
 
