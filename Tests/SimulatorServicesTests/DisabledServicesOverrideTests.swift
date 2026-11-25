@@ -10,6 +10,23 @@ struct DisabledServicesOverrideTests {
     private let udid = UUID().uuidString
 
     @Test
+    func ownedLabelsCountOnlyTheLibrarysOwnEntries() throws {
+        let root = try TemporaryDirectory()
+        defer { root.remove() }
+        let override = DisabledServicesOverride(root: root.url)
+        let directory = try override.directory(for: udid)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let seeded = try PropertyListSerialization.data(fromPropertyList: ["com.example.foreign": true], format: .xml, options: 0)
+        try seeded.write(to: directory.appendingPathComponent("disabled.plist"))
+        #expect(try override.ownedLabels(for: udid).isEmpty)
+        try override.write(["com.example.gizmod"], for: udid)
+        #expect(try override.ownedLabels(for: udid) == ["com.example.gizmod"])
+        #expect(try override.labels(for: udid) == ["com.example.foreign", "com.example.gizmod"])
+        try override.restore(for: udid)
+        #expect(try override.ownedLabels(for: udid).isEmpty)
+    }
+
+    @Test
     func writtenLabelsReadBack() throws {
         let root = try TemporaryDirectory()
         defer { root.remove() }
@@ -212,7 +229,7 @@ struct DisabledServicesOverrideTests {
     @Test(arguments: try [
         Data("garbage".utf8),
         PropertyListSerialization.data(fromPropertyList: ["com.example.a"], format: .xml, options: 0),
-        PropertyListSerialization.data(fromPropertyList: ["com.example.a": "maybe"], format: .xml, options: 0),
+        PropertyListSerialization.data(fromPropertyList: ["com.example.a": "maybe"], format: .xml, options: 0)
     ])
     func anUnreadableRecordThrowsAndChangesNothing(record: Data) throws {
         let root = try TemporaryDirectory()

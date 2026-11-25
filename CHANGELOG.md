@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added: `DisabledServicesOverride.ownedLabels(for:)`, the labels this library switched off and `restore` would put back, not counting another writer's entries.
 - Added: `DisabledServicesOverride.restore(for:)` puts back exactly what was there before the library's writes, from a record it keeps beside the file, and leaves foreign entries and the directory alone. The record survives a write interrupted at any point, a label written twice keeps its first prior, a write or restore that leaves the file with no entries deletes it, and an unreadable file or record throws `SimulatorServicesError.unreadableOverride` instead of counting as empty; `labels(for:)` throws it too, where it returned an empty set.
 - Changed: `DisabledServicesOverride.write` replaces its own earlier set instead of only adding: a label it no longer lists goes back to its prior state.
 - Added: a runtime with no bundled profile uses one measured on the machine. `ServiceProfiles.resolve(forRuntime:environment:)` returns a `ProfileResolution` (`found` with its `ProfileSource`, `bundled` or `local(URL)`; `none`; or `unreadable` with the reason) and `ServiceProfiles.localDirectory(environment:)` names the directory (`FIELDWORK_SERVICE_PROFILES` when absolute, else `~/.config/fieldwork/service-profiles`), where `<runtime identifier>.json` is a profile. A bundled profile wins; a local file that does not decode, is in a newer format or is for another runtime is refused. `profile(forRuntime:)` keeps its signature and now reads local files too.

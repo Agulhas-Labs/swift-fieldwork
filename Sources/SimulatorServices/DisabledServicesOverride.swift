@@ -96,6 +96,13 @@ public struct DisabledServicesOverride: Sendable {
         return Set(entries.filter { $0.value as? Bool == true }.keys)
     }
 
+    /// The labels this library switched off for the device and `restore` would put back; none where it wrote nothing.
+    ///
+    /// Unlike `labels(for:)`, entries another writer put in the device's file are not counted.
+    public func ownedLabels(for udid: String) throws -> Set<String> {
+        try Set(ownedEntries(in: directory(for: udid)).keys)
+    }
+
     /// Deletes the device's directory; absent is fine.
     public func remove(for udid: String) throws {
         let directory = try directory(for: udid)
