@@ -83,6 +83,10 @@ public enum ProfileCommand {
         let counts = Dictionary(grouping: profile.services, by: \.disposition).mapValues(\.count)
         let summary = [Disposition.core, .infrastructure, .disable, .keptByHealth, .unchecked, .belowThreshold, .notRunning].map { "\(counts[$0] ?? 0) \($0.rawValue)" }
         log("wrote \(options.output): \(profile.services.count) services, \(summary.joined(separator: ", "))")
+        if options.install {
+            let installed = try ProfileInstall.install(profile)
+            log("installed \(installed.path); tools that link SimulatorServices use it for \(profile.runtime.identifier) when no bundled profile exists")
+        }
         if let swift = options.swift {
             let swiftURL = URL(fileURLWithPath: swift)
             try FileManager.default.createDirectory(at: swiftURL.deletingLastPathComponent(), withIntermediateDirectories: true)

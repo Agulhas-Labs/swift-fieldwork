@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added: a runtime with no bundled profile uses one measured on the machine. `ServiceProfiles.resolve(forRuntime:environment:)` returns a `ProfileResolution` (`found` with its `ProfileSource`, `bundled` or `local(URL)`; `none`; or `unreadable` with the reason) and `ServiceProfiles.localDirectory(environment:)` names the directory (`FIELDWORK_SERVICE_PROFILES` when absolute, else `~/.config/fieldwork/service-profiles`), where `<runtime identifier>.json` is a profile. A bundled profile wins; a local file that does not decode, is in a newer format or is for another runtime is refused. `profile(forRuntime:)` keeps its signature and now reads local files too.
+- Added: `simulator-profile --install` writes the measured profile to that directory (`ProfileInstall.install`), atomically.
+
 ## 0.11.0
 
 - Added: `CodexHooksFile`, the merge of a tool's hooks into Codex's `hooks.json`: its handlers are appended after any foreign group and rewritten in place on a binary move or a switch between two of its hook sets, so Codex's position-keyed trust holds, and removal leaves every foreign handler, group and key byte for byte.
