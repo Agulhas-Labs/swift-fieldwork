@@ -1,6 +1,7 @@
 // Copyright 2026 Agulhas Labs
 // SPDX-License-Identifier: Apache-2.0
 
+import Fieldwork
 import Foundation
 
 /// What was decided about one service of a runtime.
@@ -184,12 +185,63 @@ public struct ServiceProfile: Codable, Sendable, Equatable {
     }
 }
 
+/// Where a resolved profile came from.
+public enum ProfileSource: Sendable, Equatable {
+    /// Shipped in the library.
+    case bundled
+    /// Measured on this machine: the file it was read from.
+    case local(URL)
+}
+
+/// The answer to looking a runtime's profile up.
+public enum ProfileResolution: Sendable {
+    /// A profile, and where it came from.
+    case found(ServiceProfile, ProfileSource)
+    /// No bundled profile and no local file.
+    case none
+    /// A local file that was refused, and why; a refused file is never used.
+    case unreadable(URL, String)
+
+    /// The profile found, or nil.
+    public var profile: ServiceProfile? {
+        if case let .found(profile, _) = self {
+            return profile
+        }
+        return nil
+    }
+}
+
 /// The profiles that ship with the library.
 public enum ServiceProfiles {
-    /// The bundled profile for a runtime, or nil where there is none or it does not decode.
+    /// The profile for a runtime: the bundled one, else one measured on this machine, or nil, in which case boot stock.
     public static func profile(forRuntime identifier: String) -> ServiceProfile? {
-        guard let text = bundled[identifier] else { return nil }
-        return try? JSONDecoder().decode(ServiceProfile.self, from: Data(text.utf8))
+        resolve(forRuntime: identifier).profile
+    }
+
+    /// The profile for a runtime and where it came from. A bundled profile (reviewed) wins over a local file. A local file that does not decode, is in a newer format, or is for another runtime is refused and reported, never used.
+    public static func resolve(forRuntime identifier: String, environment: [String: String] = ProcessInfo.processInfo.environment) -> ProfileResolution {
+        if let text = bundled[identifier], let profile = try? JSONDecoder().decode(ServiceProfile.self, from: Data(text.utf8)) {
+            return .found(profile, .bundled)
+        }
+        let url = localDirectory(environment: environment).appendingPathComponent("\(identifier).json")
+        guard FileManager.default.fileExists(atPath: url.path) else { return .none }
+        do {
+            let profile = try JSONDecoder().decode(ServiceProfile.self, from: Data(contentsOf: url))
+            guard profile.runtime.identifier == identifier else {
+                return .unreadable(url, "its runtime is \(profile.runtime.identifier), not \(identifier)")
+            }
+            return .found(profile, .local(url))
+        } catch {
+            return .unreadable(url, "\(error)")
+        }
+    }
+
+    /// The directory of locally measured profiles: `FIELDWORK_SERVICE_PROFILES` when it holds an absolute path, else `~/.config/fieldwork/service-profiles`. A profile is the file `<runtime identifier>.json` in it.
+    public static func localDirectory(environment: [String: String] = ProcessInfo.processInfo.environment) -> URL {
+        if let value = environment["FIELDWORK_SERVICE_PROFILES"], value.hasPrefix("/") {
+            return URL(fileURLWithPath: value, isDirectory: true)
+        }
+        return AgentPaths.userHome(environment: environment).appendingPathComponent(".config/fieldwork/service-profiles", isDirectory: true)
     }
 
     /// Runtime identifier to profile JSON text, merged from `sources`.
@@ -198,5 +250,6 @@ public enum ServiceProfiles {
     /// A profile file `iOS27Point0.swift` adds `static let iOS27Point0: [String: String] = [...]` in an extension, and registers it by adding its name to this list: the one edit to this file.
     private static let sources: [[String: String]] = [
         iOS27Point0,
+        iOS27Point2,
     ]
 }

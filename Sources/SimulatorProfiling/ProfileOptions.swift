@@ -29,6 +29,7 @@ public struct ProfileOptions: Equatable, Sendable {
     public var cpuThresholdSeconds = 0.5
     public var profileVersion = 1
     public var allowBooted = false
+    public var install = false
     public var app: String?
     public var bundleID: String?
     public var xctestrun: String?
@@ -46,7 +47,7 @@ public struct ProfileOptions: Equatable, Sendable {
     public static let usage = """
     usage: simulator-profile --runtime <identifier> --device-type <name> --out <path.json>
                              [--window 300] [--footprint-threshold 4] [--cpu-threshold 0.5]
-                             [--profile-version 1] [--allow-booted]
+                             [--profile-version 1] [--allow-booted] [--install]
                              [--stage all|cost|health] [--from <profile.json>]
                              [--app <path.app> --bundle-id <id>] [--xctestrun <path> --only-testing <id>]
                              [--log-window 45] [--max-kept 12] [--baselines 3] [--candidates <label,label,...>]
@@ -62,11 +63,14 @@ public struct ProfileOptions: Equatable, Sendable {
     public static func parse(_ arguments: [String]) throws -> ProfileOptions {
         var values: [String: String] = [:]
         var allowBooted = false
+        var install = false
         var index = 0
         while index < arguments.count {
             let flag = arguments[index]
             if flag == "--allow-booted" {
                 allowBooted = true
+            } else if flag == "--install" {
+                install = true
             } else if valued.contains(flag) {
                 guard index + 1 < arguments.count else { throw ProfileUsageError(message: "\(flag) needs a value") }
                 index += 1
@@ -81,6 +85,7 @@ public struct ProfileOptions: Equatable, Sendable {
         guard let output = values["--out"] else { throw ProfileUsageError(message: "--out is required") }
         var options = ProfileOptions(runtime: runtime, deviceType: deviceType, output: output)
         options.allowBooted = allowBooted
+        options.install = install
         try options.applyNumbers(values)
         try options.applyPaths(values)
         try options.validate()
