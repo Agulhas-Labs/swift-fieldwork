@@ -51,8 +51,8 @@ enum HealthStage {
         for number in 1 ... options.baselines {
             ProfileCommand.log("health: baseline trial \(number) of \(options.baselines)")
             let stock = try runner.run(disabled: [])
-            guard stock.bootSeconds != nil, stock.launchPassed, stock.uiTestPassed else {
-                throw HealthStageError(description: "the stock device does not pass its own health check; fix the app, the test or the device first")
+            if let refusal = stockRefusal(stock, trial: number, options: options) {
+                throw HealthStageError(description: refusal)
             }
             ProfileCommand.log("trial: stock, \(String(format: "%.1f", stock.bootSeconds ?? 0)) s boot, launch \(stock.launchSeconds.map { String(format: "%.1f", $0) } ?? "-") s")
             stocks.append(stock)
@@ -120,6 +120,22 @@ enum HealthStage {
     static func candidates(_ candidates: [String], keeping kept: [Capability], in profile: ServiceProfile) -> [String] {
         let spared = Set(kept.flatMap { profile.labels(for: $0) })
         return candidates.filter { !spared.contains($0) }
+    }
+
+    /// Why a stock trial fails its own health check, naming each check it failed and on which device type, or nil when it passes.
+    static func stockRefusal(_ stock: TrialMeasurement, trial number: Int, options: ProfileOptions) -> String? {
+        var failed: [String] = []
+        if stock.bootSeconds == nil {
+            failed.append("the boot")
+        }
+        if !stock.launchPassed {
+            failed.append("the launch of \(options.bundleID ?? "the app")")
+        }
+        if !stock.uiTestPassed {
+            failed.append("the UI test \(options.onlyTesting ?? "")")
+        }
+        guard !failed.isEmpty else { return nil }
+        return "the stock device does not pass its own health check: in baseline trial \(number), \(failed.joined(separator: " and ")) failed on a stock \(options.deviceType); fix the app, the test or the device first"
     }
 
     private static func baselineLine(_ stocks: [TrialMeasurement], _ floor: TrialMeasurement) -> String {
