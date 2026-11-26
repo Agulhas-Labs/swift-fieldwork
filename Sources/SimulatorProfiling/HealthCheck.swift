@@ -68,15 +68,45 @@ public enum HealthCheck {
         if !trial.uiTestPassed || (trial.uiTestSeconds ?? 0) > (baseline.uiTestSeconds ?? 0) * 1.3 + 10 {
             failures.append(.uiTestRunner)
         }
-        for (process, count) in trial.logCounts.sorted(by: { $0.key < $1.key }) {
-            if count >= 2000, Double(count) > 10 * Double(baseline.logCounts[process] ?? 0) + 200 {
-                failures.append(.logFlood(process))
-            }
+        for (process, count) in trial.logCounts.sorted(by: { $0.key < $1.key }) where isFlood(count: count, base: baseline.logCounts[process] ?? 0) {
+            failures.append(.logFlood(process))
         }
         for label in trial.respawned.subtracting(baseline.respawned).sorted() {
             failures.append(.respawn(label))
         }
         return failures
+    }
+
+    /// Whether a process that wrote `count` log lines floods the log against `base`, the count it wrote on the device it is compared with: at least 2000, and over ten times `base` plus 200.
+    public static func isFlood(count: Int, base: Int) -> Bool {
+        count >= 2000 && Double(count) > 10 * Double(base) + 200
+    }
+
+    /// Whether `failures` are only noise, so a control boot can tell whether the device itself is to blame: there is at least one, and each is a log flood or a respawn.
+    public static func needsControl(_ failures: [HealthFailure]) -> Bool {
+        !failures.isEmpty && failures.allSatisfy(isNoisy)
+    }
+
+    /// The failures that stand once `control`, a stock boot of the same device straight after, is taken into account.
+    ///
+    /// A device's background work can log more as it ages through boots, so a flood the stock boot shows as well is not the switched-off services' doing: a `logFlood` stands only where `trial`'s count is a flood against the control's count, and a `respawn` only where the control did not respawn that label. Any other failure stands.
+    public static func controlled(_ failures: [HealthFailure], trial: TrialMeasurement, control: TrialMeasurement) -> [HealthFailure] {
+        failures.filter { failure in
+            switch failure {
+            case let .logFlood(process):
+                isFlood(count: trial.logCounts[process] ?? 0, base: control.logCounts[process] ?? 0)
+            case let .respawn(label):
+                !control.respawned.contains(label)
+            default:
+                true
+            }
+        }
+    }
+
+    /// How a trial line shows `failure`: a log flood with the trial's count and the noise floor's (`log-flood(dasd) 41203 vs ≤ 180`), any other failure by its name.
+    public static func detail(_ failure: HealthFailure, installing: Bool, trial: TrialMeasurement, baseline: TrialMeasurement) -> String {
+        guard case let .logFlood(process) = failure else { return failure.name(installing: installing) }
+        return "\(failure.name(installing: installing)) \(trial.logCounts[process] ?? 0) vs ≤ \(baseline.logCounts[process] ?? 0)"
     }
 
     /// The worst of several stock boots: the most a healthy device was seen to log, take or crash.
