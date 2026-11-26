@@ -35,4 +35,15 @@ struct StockRefusalTests {
 
         #expect(refusal?.contains("in baseline trial 1, the boot and the launch of com.example.gizmo failed on a stock Gizmo Phone") == true)
     }
+
+    @Test func `a failed launch with no app names the settings app that was launched`() {
+        var plain = ProfileOptions(runtime: "com.example.runtime", deviceType: "Gizmo Phone", output: "/dev/null")
+        plain.bundleID = nil
+        var trial = TrialMeasurement(bootSeconds: 20)
+        trial.launchPassed = false
+
+        let refusal = HealthStage.stockRefusal(trial, during: "timing pair 1", options: plain)
+
+        #expect(refusal?.contains("in timing pair 1, the launch of com.apple.Preferences failed on a stock Gizmo Phone") == true)
+    }
 }

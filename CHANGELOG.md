@@ -5,7 +5,7 @@
 - Added: the health stage boots a stock control straight after a trial whose confirmed failures are all log floods or respawns, and keeps such a failure only if the slim boot exceeds the control the same way (a flood against the control's own count, a respawn the control did not show). On the iOS 27.2 iPhone Duo runtime the bisection did not converge: about 148 trials over three hours, one clean, nearly every failure a log flood from the device's own background work, which logs more as the device ages through boots, against baselines taken on a fresh one. `HealthCheck.needsControl(_:)`, `HealthCheck.controlled(_:trial:control:)` and `HealthCheck.isFlood(count:base:)` are the verdict. A control that fails its own health check refuses the run, as a failed baseline does.
 - Changed: a trial line prints a log flood with the trial's count and the noise floor's (`log-flood(dasd) 41203 vs ≤ 180`), `HealthCheck.detail(_:installing:trial:baseline:)`; a control prints the counts of both boots.
 - Added: `--max-trials` (default 100) caps the boots the bisection makes, first boots, retries and controls alike (baselines and timing pairs do not count). Past it the stage throws `TrialBudgetError`, naming the services kept on so far, and logs each as it keeps it.
-- Changed: a stock device that fails its own health check is refused naming each check that failed, the test and the device type, instead of one line for all three.
+- Changed: a stock device that fails its own health check is refused naming each check that failed, the test and the device type, instead of one line for all three; the timing pair's stock check says the same, and a launch with no `--app` names `com.apple.Preferences`. The control line marks each failure `stands` or `cleared`.
 
 ## 0.14.0
 
