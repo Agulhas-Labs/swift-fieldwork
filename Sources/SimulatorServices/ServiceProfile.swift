@@ -251,5 +251,6 @@ public enum ServiceProfiles {
     private static let sources: [[String: String]] = [
         iOS27Point0,
         iOS27Point2,
+        iOS27Point2PointiPhone19Point4,
     ]
 }

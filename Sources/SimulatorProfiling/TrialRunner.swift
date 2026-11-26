@@ -18,6 +18,9 @@ public struct TrialRunner: Sendable {
         self.override = override
     }
 
+    /// The bundle the trials launch when no `--app` is given.
+    static let defaultBundleID = "com.apple.Preferences"
+
     /// Whether the trials install an app, and so name their launch check `install-launch`.
     public var installs: Bool {
         options.app != nil
@@ -67,7 +70,7 @@ public struct TrialRunner: Sendable {
 
     private func launch(into trial: inout TrialMeasurement) {
         let start = Self.now()
-        var bundle = "com.apple.Preferences"
+        var bundle = Self.defaultBundleID
         var passed = true
         if let app = options.app, let bundleID = options.bundleID {
             bundle = bundleID

@@ -51,51 +51,77 @@ enum HealthStage {
         for number in 1 ... options.baselines {
             ProfileCommand.log("health: baseline trial \(number) of \(options.baselines)")
             let stock = try runner.run(disabled: [])
-            guard stock.bootSeconds != nil, stock.launchPassed, stock.uiTestPassed else {
-                throw HealthStageError(description: "the stock device does not pass its own health check; fix the app, the test or the device first")
+            if let refusal = stockRefusal(stock, trial: number, options: options) {
+                throw HealthStageError(description: refusal)
             }
             ProfileCommand.log("trial: stock, \(String(format: "%.1f", stock.bootSeconds ?? 0)) s boot, launch \(stock.launchSeconds.map { String(format: "%.1f", $0) } ?? "-") s")
             stocks.append(stock)
         }
         let baseline = HealthCheck.noiseFloor(stocks)
         ProfileCommand.log(baselineLine(stocks, baseline))
-        let kept = try Bisection.kept(candidates: candidates, maxKept: options.maxKept) { set in
+        let kept = try bisect(candidates, baseline: baseline, installing: runner.installs, options: options, run: { try runner.run(disabled: $0) })
+        ProfileCommand.log("health: keep on \(kept.count): \(kept.joined(separator: ", "))")
+        try checkTiming(disabling: candidates.filter { !kept.contains($0) }, runner: runner, options: options)
+        return kept
+    }
+
+    /// The candidates the device needs, found by bisection over `run`, which boots the device with a set switched off and measures it.
+    ///
+    /// Every call to `run` spends one boot of the `options.maxTrials` budget; a set the bisection already tried costs none. A flood or respawn that survives its retry is compared with a stock control boot, and stands only if the control does not show it too.
+    static func bisect(_ candidates: [String], baseline: TrialMeasurement, installing: Bool, options: ProfileOptions, run: ([String]) throws -> TrialMeasurement) throws -> [String] {
+        var budget = TrialBudget(limit: options.maxTrials)
+        var keptSoFar: [String] = []
+        return try Bisection.kept(candidates: candidates, maxKept: options.maxKept, onKept: { label in
+            keptSoFar.append(label)
+            ProfileCommand.log("health: keeping \(label) on (\(keptSoFar.count) so far)")
+        }, fails: { set in
             let start = ProcessInfo.processInfo.systemUptime
-            let trial = try runner.run(disabled: set)
+            try budget.spend(keptSoFar: keptSoFar)
+            let trial = try run(set)
             let first = HealthCheck.evaluate(trial: trial, baseline: baseline, disabled: Set(set))
             try rejectReadBack(first)
-            ProfileCommand.log("trial: \(set.count) off, failures [\(describe(first, runner))], \(seconds(since: start)) s")
+            ProfileCommand.log("trial: \(set.count) off, failures [\(describe(first, installing, trial, baseline))], \(seconds(since: start)) s")
             logPidChanges(trial)
-            let failures = try HealthCheck.confirmed(first) {
+            var measured = trial
+            var failures = try HealthCheck.confirmed(first) {
                 let retryStart = ProcessInfo.processInfo.systemUptime
-                let retried = try runner.run(disabled: set)
+                try budget.spend(keptSoFar: keptSoFar)
+                let retried = try run(set)
+                measured = retried
                 let again = HealthCheck.evaluate(trial: retried, baseline: baseline, disabled: Set(set))
                 try rejectReadBack(again)
-                ProfileCommand.log("trial: \(set.count) off, retry, failures [\(describe(again, runner))], \(seconds(since: retryStart)) s")
+                ProfileCommand.log("trial: \(set.count) off, retry, failures [\(describe(again, installing, retried, baseline))], \(seconds(since: retryStart)) s")
                 logPidChanges(retried)
                 return again
             }
             if failures != first {
-                ProfileCommand.log("trial: \(set.count) off, confirmed [\(describe(failures, runner))]")
+                ProfileCommand.log("trial: \(set.count) off, confirmed [\(describe(failures, installing, measured, baseline))]")
+            }
+            if HealthCheck.needsControl(failures) {
+                try budget.spend(keptSoFar: keptSoFar)
+                let control = try run([])
+                if let refusal = stockRefusal(control, during: "the control boot after a \(set.count)-off trial", options: options) {
+                    throw HealthStageError(description: refusal)
+                }
+                let standing = HealthCheck.controlled(failures, trial: measured, control: control)
+                ProfileCommand.log("trial: \(set.count) off, control stock, [\(controlDetail(failures, standing, installing, measured, control))]")
+                failures = standing
             }
             return !failures.isEmpty
-        }
-        ProfileCommand.log("health: keep on \(kept.count): \(kept.joined(separator: ", "))")
-        try checkTiming(disabling: candidates.filter { !kept.contains($0) }, runner: runner)
-        return kept
+        })
     }
 
     /// The number of stock and slim pairs the timing check boots.
     static let timingPairs = 2
 
     /// Boots the device stock and slim in turn, `timingPairs` times, and throws when the slim boot is slower at the same step in every pair (`HealthCheck.slowerInEveryPair`).
-    private static func checkTiming(disabling slim: [String], runner: TrialRunner) throws {
+    private static func checkTiming(disabling slim: [String], runner: TrialRunner, options: ProfileOptions) throws {
         guard !slim.isEmpty else { return }
         var pairs: [(stock: TrialMeasurement, slim: TrialMeasurement)] = []
         for number in 1 ... timingPairs {
             let stockTrial = try runner.run(disabled: [])
-            guard stockTrial.bootSeconds != nil, stockTrial.launchPassed, stockTrial.uiTestPassed else {
-                throw HealthStageError(description: "timing pair \(number): the stock device failed its own health check, so the timing cannot be compared; run again on a quieter machine")
+            if let refusal = stockRefusal(stockTrial, during: "timing pair \(number)", options: options) {
+                throw HealthStageError(description: refusal)
             }
             let slimTrial = try runner.run(disabled: slim)
             guard slimTrial.bootSeconds != nil, slimTrial.launchPassed, slimTrial.uiTestPassed else {
@@ -122,6 +148,27 @@ enum HealthStage {
         return candidates.filter { !spared.contains($0) }
     }
 
+    /// Why a stock trial fails its own health check, naming each check it failed and on which device type, or nil when it passes.
+    static func stockRefusal(_ stock: TrialMeasurement, trial number: Int, options: ProfileOptions) -> String? {
+        stockRefusal(stock, during: "baseline trial \(number)", options: options)
+    }
+
+    /// Why a stock boot fails its own health check during `phase` ("baseline trial 2", "the control boot after a 3-off trial"), or nil when it passes.
+    static func stockRefusal(_ stock: TrialMeasurement, during phase: String, options: ProfileOptions) -> String? {
+        var failed: [String] = []
+        if stock.bootSeconds == nil {
+            failed.append("the boot")
+        }
+        if !stock.launchPassed {
+            failed.append("the launch of \(options.bundleID ?? TrialRunner.defaultBundleID)")
+        }
+        if !stock.uiTestPassed {
+            failed.append("the UI test \(options.onlyTesting ?? "")")
+        }
+        guard !failed.isEmpty else { return nil }
+        return "the stock device does not pass its own health check: in \(phase), \(failed.joined(separator: " and ")) failed on a stock \(options.deviceType); fix the app, the test or the device first"
+    }
+
     private static func baselineLine(_ stocks: [TrialMeasurement], _ floor: TrialMeasurement) -> String {
         let noisiest = floor.logCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }.prefix(3)
             .map { "\($0.key):\($0.value)" }.joined(separator: ", ")
@@ -139,8 +186,17 @@ enum HealthStage {
         }
     }
 
-    private static func describe(_ failures: [HealthFailure], _ runner: TrialRunner) -> String {
-        failures.map { $0.name(installing: runner.installs) }.joined(separator: ", ")
+    private static func describe(_ failures: [HealthFailure], _ installing: Bool, _ trial: TrialMeasurement, _ baseline: TrialMeasurement) -> String {
+        failures.map { HealthCheck.detail($0, installing: installing, trial: trial, baseline: baseline) }.joined(separator: ", ")
+    }
+
+    /// Each noisy failure with the slim trial's count and the control's (a respawn by name only), marked `stands` or `cleared` by whether it is in `standing`.
+    static func controlDetail(_ failures: [HealthFailure], _ standing: [HealthFailure], _ installing: Bool, _ trial: TrialMeasurement, _ control: TrialMeasurement) -> String {
+        failures.map { failure in
+            let verdict = standing.contains(failure) ? "stands" : "cleared"
+            guard case let .logFlood(process) = failure else { return "\(failure.name(installing: installing)) \(verdict)" }
+            return "\(failure.name(installing: installing)) \(trial.logCounts[process] ?? 0) vs \(control.logCounts[process] ?? 0) stock \(verdict)"
+        }.joined(separator: ", ")
     }
 
     private static func seconds(since start: TimeInterval) -> String {
