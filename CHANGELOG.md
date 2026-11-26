@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.15.0
 
 - Added: the iOS 27.2 iPhone Duo service profile (`com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4`, the runtime's one device type): 338 services, 90 switched off, 3 kept on by the health check (`com.apple.featureaccessd`, `com.apple.financed`, `com.apple.geod`: with `geod` off the map snapshot service and `navd` flood the log, with the other two off `passd` crashes and respawns) and 6 left on because no trial had them off. The bisection converged in 56 boots, and the slim device was as fast as stock in both timing pairs.
 - Added: the health stage boots a stock control straight after a trial whose confirmed failures are all log floods or respawns, and keeps such a failure only if the slim boot exceeds the control the same way (a flood against the control's own count, a respawn the control did not show). On the iOS 27.2 iPhone Duo runtime the bisection did not converge: about 148 trials over three hours, one clean, nearly every failure a log flood from background work unrelated to what was off, against baselines all taken first, on a fresh device. A flood that the stock device shows as well, at the same point in the run, is not the switched-off services' doing. `HealthCheck.needsControl(_:)`, `HealthCheck.controlled(_:trial:control:)` and `HealthCheck.isFlood(count:base:)` are the verdict. A control that fails its own health check refuses the run, as a failed baseline does.
