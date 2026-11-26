@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import Foundation
+import SimulatorServices
 
 /// The commands and the clock a ``CostSampler`` reads, so a test can drive it without a simulator.
 public protocol SamplingSource {
