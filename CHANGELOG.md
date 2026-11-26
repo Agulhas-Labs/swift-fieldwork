@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.14.0
 
 - Added: `DeviceMemory.measure(udid:)` returns how many processes a booted simulator's `launchd_sim` tree holds and their summed `footprint` in megabytes (nil when it is not booted), with `DeviceMemory(udid:processTable:footprint:)` as the pure form over captured `ps` output. `ProcessTable` and `FootprintReport` moved from the internal profiling target to `SimulatorServices`, so consumers can read them.
 
