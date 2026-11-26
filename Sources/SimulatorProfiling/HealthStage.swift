@@ -88,8 +88,7 @@ enum HealthStage {
     /// The number of stock and slim pairs the timing check boots.
     static let timingPairs = 2
 
-    /// Boots the device stock and slim in turn, `timingPairs` times, and throws when the slim boot is slower at the
-    /// same step in every pair (`HealthCheck.slowerInEveryPair`).
+    /// Boots the device stock and slim in turn, `timingPairs` times, and throws when the slim boot is slower at the same step in every pair (`HealthCheck.slowerInEveryPair`).
     private static func checkTiming(disabling slim: [String], runner: TrialRunner) throws {
         guard !slim.isEmpty else { return }
         var pairs: [(stock: TrialMeasurement, slim: TrialMeasurement)] = []
@@ -107,7 +106,7 @@ enum HealthStage {
         }
         let slower = HealthCheck.slowerInEveryPair(pairs, installing: runner.installs)
         guard slower.isEmpty else {
-            throw HealthStageError(description: "with \(slim.count) services off the device is slower than stock in every pair at \(slower.joined(separator: ", ")): a service it switches off is one that step waits for; find it with --candidates and a smaller set, and keep it on")
+            throw HealthStageError(description: "with \(slim.count) services off the device is slower than stock in every pair at \(slower.joined(separator: ", ")): a service it switches off is one that step waits for, and the profile was not written. Find it by timing a UI test with halves of the set off (a --candidates run is for that diagnosis only: its profile still switches off every label it does not list), then add it to InfrastructureServices so no profile switches it off")
         }
         ProfileCommand.log("timing: \(slim.count) off is as fast as stock in \(timingPairs) pairs")
     }

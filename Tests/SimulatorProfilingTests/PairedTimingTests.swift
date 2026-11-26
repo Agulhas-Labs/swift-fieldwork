@@ -44,6 +44,13 @@ struct PairedTimingTests {
         #expect(HealthCheck.slowerInEveryPair([pair(stock: 24.1, slim: 19.0), pair(stock: 19.3, slim: 21.5)], installing: true).isEmpty)
     }
 
+    @Test func `each slim boot is compared with its own pair's stock boot`() {
+        // Slower than the fastest stock boot in both pairs, but not than its own pair's in the second.
+        #expect(HealthCheck.slowerInEveryPair([pair(stock: 19, slim: 30), pair(stock: 40, slim: 41)], installing: true).isEmpty)
+        // Faster than the slowest stock boot in both pairs, but slower than its own pair's in each.
+        #expect(HealthCheck.slowerInEveryPair([pair(stock: 19, slim: 30), pair(stock: 40, slim: 50)], installing: true) == ["ui-test-runner"])
+    }
+
     @Test func `the tolerance is five seconds or a tenth of the stock time`() {
         #expect(HealthCheck.timingTolerance(stock: 19) == 5)
         #expect(HealthCheck.timingTolerance(stock: 80) == 8)
