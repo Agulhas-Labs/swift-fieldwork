@@ -3,7 +3,7 @@
 The index to working in this repo. Read the files it links before starting a task.
 
 ## Project shape
-swift-fieldwork is a Swift package with one library, `Fieldwork`, depending on Foundation only. It is the agent-setup layer shared by sift and SimWalk. It holds the consumer's identity (`FieldworkTool`), the Claude Code, Cursor and Codex locations (`AgentPaths`), agent detection, selection and the install prompt, settings files with their backups, a bounded `Subprocess` runner, the device-lease store, the Claude Code, Cursor and Codex setup (hooks, MCP servers, the rule, Cursor's hook translation), `Family`, and the doctor for Claude Code, Cursor and Codex with Codex's `codex mcp` lookup.
+swift-fieldwork is a Swift package with three libraries and one tool, depending on Foundation only: `Fieldwork`, the agent-setup layer shared by SwiftSure (formerly sift) and SimWalk; `SimulatorServices`, which boots simulators with unneeded system services off, measured per runtime by the `simulator-profile` tool; and `SimulatorAnimations`, which builds the library that switches UIKit animations off in an app under test. `Fieldwork` holds the consumer's identity (`FieldworkTool`), the Claude Code, Cursor and Codex locations (`AgentPaths`), agent detection, selection and the install prompt, settings files with their backups, a bounded `Subprocess` runner, the device-lease store, the Claude Code, Cursor and Codex setup (hooks, MCP servers, the rule, Cursor's hook translation), `Family`, and the doctor for Claude Code, Cursor and Codex with Codex's `codex mcp` lookup.
 
 ## Commands
 - `sh setup.sh` — once per checkout: installs SwiftLint and SwiftFormat and activates `githooks/`.
