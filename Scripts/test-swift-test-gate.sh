@@ -30,7 +30,7 @@ exit "${STUB_SIFT_RC:-0}"
 STUB
 cat > "$WITH/swift" << 'STUB'
 #!/bin/sh
-echo "plain swift ran"
+echo "plain swift ran in $(pwd -P)"
 exit "${STUB_SWIFT_RC:-0}"
 STUB
 cp "$WITH/swift" "$WITHOUT/swift"
@@ -110,6 +110,13 @@ expect "no sift: plain swift test runs, exit 0, one line says unchecked" 0 "plai
 STUB_SWIFT_RC=3
 run "$WITHOUT"
 expect "no sift: swift's exit passes through" 3 "plain swift ran"
+
+# Called by path from another directory, the gate still tests the repository it lives in.
+STUB_SWIFT_RC=0
+ROOT="$(cd "$HERE/.." && pwd -P)"
+OUT="$(cd "$T" && PATH="$WITHOUT:$SYSTEM_PATH" sh "$GATE" 2>&1)"
+RC=$?
+expect "run from another directory, it tests its own repository" 0 "plain swift ran in $ROOT"
 
 if [ "$FAILED" = "0" ] && [ "$CASES" -gt 0 ]; then
     echo "all $CASES cases passed"

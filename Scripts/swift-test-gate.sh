@@ -10,6 +10,10 @@
 # exit through and says in one line that the count was not checked.
 set -u
 
+# Test this repository, wherever the script was called from: run by path from another package's directory
+# it would otherwise count that package's suite and report it green.
+cd "$(dirname "$0")/.." || { echo "swift-test-gate: cannot change to the repository root"; exit 1; }
+
 if ! command -v sift > /dev/null 2>&1; then
     swift test "$@"
     STATUS=$?
