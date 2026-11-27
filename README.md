@@ -1,27 +1,16 @@
 # swift-fieldwork
 
-The agent-setup layer shared by the Fieldwork tools: [SwiftSure](https://github.com/Agulhas-Labs/swift-sure), a Swift code index for coding agents, and [SimWalk](https://github.com/Agulhas-Labs/simwalk), deterministic UI walks of a running iOS app.
+Three Swift libraries for tools that set themselves up in coding agents and run against iOS simulators. They are what [SwiftSure](https://github.com/Agulhas-Labs/swift-sure), a Swift code index for coding agents, and [SimWalk](https://github.com/Agulhas-Labs/simwalk), deterministic UI walks of a running iOS app, share. Foundation only; no dependencies.
 
-It holds what a tool needs to find and talk to the coding agents on a machine (Claude Code, Cursor and Codex) and to share a device between runs. The tool supplies its own identity as values; the package carries none.
+- **`Fieldwork`** installs a tool into Claude Code, Cursor and Codex and takes it out again: its MCP server, its hooks and its rule file, merged beside whatever other tools put there and removed without touching theirs. It also carries a `doctor` that checks each agent can really launch the tool, and a lease that lets one run at a time claim a simulator or device. The tool supplies its own identity as values; the package carries none. See [What is in Fieldwork](#what-is-in-fieldwork).
+- **`SimulatorServices`** boots an iOS simulator *slim*, with the system services a project does not need switched off: 90 to 94 of a runtime's 338, from profiles measured per runtime. On an iOS 27.2 iPhone 17 simulator, an idle device went from 211 processes to about 137 and from 9.6 GB to 7.4 GB of memory footprint, and a UI test took the same time as on a stock boot (one app's test, one machine). The `simulator-profile` tool measures a profile for a runtime that has none. See [Simulator services](#simulator-services).
+- **`SimulatorAnimations`** builds the library that switches UIKit animations off in an app under test. See [Simulator animations](#simulator-animations).
 
-- `FieldworkTool`: the consumer's identity (its name, hook subcommands and the install command every remedy names), and the recognition of a registered shell command as its own.
-- `AgentPaths`: where Claude Code, Cursor and Codex keep their configuration, resolved from the environment.
-- Detection, selection and the prompt: `AgentDetection` finds the agents, `AgentSelection` decides which to install into, `InstallPrompt` asks, and `InstallStepReport` and `InstallSummary` report what each step did.
-- `Family`: runs the other Fieldwork tools' installs from one tool's `install`, once, with the same agent flags.
-- Settings files with their backups: `SettingsFile` and `SettingsBackupFile`.
-- `Subprocess`: a bounded child-process runner.
-- Claude Code hooks: `HookRegistration` merges a tool's hooks into `settings.json` beside other tools' and removes only its own, and `HookOutput` is the JSON a hook prints back.
-- Claude Code setup: `ClaudeMcpServer` and `ClaudeMcpInstall` register and remove the tool's MCP server through `claude mcp`, and `ClaudeRuleInstall` copies and removes its agent rule.
-- Cursor setup: `CursorMcpFile` and `CursorHooksFile` merge the tool's server into `mcp.json` and its hooks into `hooks.json` beside other tools', and `CursorInstall`, `CursorHookInstaller` and `CursorInstallStep` write both; `CursorHookPayload`, `CursorPreToolUse`, `CursorPostToolUse`, `CursorSessionStart` and `CursorHookOutput` read a Cursor hook payload as the Claude Code one the tool's hook judges and write its answer back in Cursor's schema.
-- The lease store: `LeaseStore` and `DeviceLease`, which let one run at a time claim a simulator or device.
-- The doctor: `DoctorCheck`, `DoctorReport` (with its `--json` encoding), `DoctorProbe` (runs what an agent would run in a scratch directory, through a launcher the consumer may replace), and one check per agent: `DoctorClaude`, `DoctorCursor` and `DoctorCodex`, each of which also says whether nothing of the tool's is installed there.
-- Codex setup: `CodexHooksFile` merges the tool's hooks into Codex's `hooks.json` beside other tools', keeping every foreign group where it was, since Codex keys a hook's trust by its position. `CodexInstall`, `CodexHookInstaller` and `CodexInstallStep` write it and register the server through `CodexMcpServer`, which reads and changes it through `codex mcp`, run by a `CodexMcpRunner` (`CodexCLI` runs the real one).
-
-A second library, `SimulatorServices`, boots iOS simulators with the system services a project does not need switched off, and the `simulator-profile` tool measures which those are for each simulator runtime (see [Simulator services](#simulator-services)). A third, `SimulatorAnimations`, builds the library that switches UIKit animations off in an app under test (see [Simulator animations](#simulator-animations)).
+To use the two tools rather than build on the libraries, see [Install](#install).
 
 ## Status
 
-0.11.0; the API may change before 1.0.
+0.15.0; the API may change before 1.0. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Usage
 
@@ -48,6 +37,21 @@ if case let .ask(agents) = selection {
     print(accepted)
 }
 ```
+
+## What is in Fieldwork
+
+- `FieldworkTool`: the consumer's identity (its name, hook subcommands and the install command every remedy names), and the recognition of a registered shell command as its own.
+- `AgentPaths`: where Claude Code, Cursor and Codex keep their configuration, resolved from the environment.
+- Detection, selection and the prompt: `AgentDetection` finds the agents, `AgentSelection` decides which to install into, `InstallPrompt` asks, and `InstallStepReport` and `InstallSummary` report what each step did.
+- `Family`: runs the other Fieldwork tools' installs from one tool's `install`, once, with the same agent flags.
+- Settings files with their backups: `SettingsFile` and `SettingsBackupFile`.
+- `Subprocess`: a bounded child-process runner.
+- Claude Code hooks: `HookRegistration` merges a tool's hooks into `settings.json` beside other tools' and removes only its own, and `HookOutput` is the JSON a hook prints back.
+- Claude Code setup: `ClaudeMcpServer` and `ClaudeMcpInstall` register and remove the tool's MCP server through `claude mcp`, and `ClaudeRuleInstall` copies and removes its agent rule.
+- Cursor setup: `CursorMcpFile` and `CursorHooksFile` merge the tool's server into `mcp.json` and its hooks into `hooks.json` beside other tools', and `CursorInstall`, `CursorHookInstaller` and `CursorInstallStep` write both; `CursorHookPayload`, `CursorPreToolUse`, `CursorPostToolUse`, `CursorSessionStart` and `CursorHookOutput` read a Cursor hook payload as the Claude Code one the tool's hook judges and write its answer back in Cursor's schema.
+- The lease store: `LeaseStore` and `DeviceLease`, which let one run at a time claim a simulator or device.
+- The doctor: `DoctorCheck`, `DoctorReport` (with its `--json` encoding), `DoctorProbe` (runs what an agent would run in a scratch directory, through a launcher the consumer may replace), and one check per agent: `DoctorClaude`, `DoctorCursor` and `DoctorCodex`, each of which also says whether nothing of the tool's is installed there.
+- Codex setup: `CodexHooksFile` merges the tool's hooks into Codex's `hooks.json` beside other tools', keeping every foreign group where it was, since Codex keys a hook's trust by its position. `CodexInstall`, `CodexHookInstaller` and `CodexInstallStep` write it and register the server through `CodexMcpServer`, which reads and changes it through `codex mcp`, run by a `CodexMcpRunner` (`CodexCLI` runs the real one).
 
 ## Simulator services
 
@@ -117,10 +121,10 @@ A Swift 6.2 toolchain and macOS 13 or later. Foundation only; no dependencies. `
 
 ## Depending on it
 
-Version 0.11.0 is tagged. In `Package.swift`:
+Version 0.15.0 is tagged. In `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.11.0")
+.package(url: "https://github.com/Agulhas-Labs/swift-fieldwork.git", from: "0.15.0")
 ```
 
 and in the target that uses it, any of the libraries:

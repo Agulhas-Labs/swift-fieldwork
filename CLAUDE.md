@@ -20,5 +20,6 @@ Start at **[AGENTS.md](AGENTS.md)**, the index to the project's guidelines. Read
   verified, commit it: never broken or half-finished, and unrelated changes in separate commits.
 
 ## Project shape
-A Swift package with one library, `Fieldwork`, depending on Foundation only. It will be the setup layer that
-sift and SimWalk share when they register themselves with coding agents.
+A Swift package with three libraries, depending on Foundation only: `Fieldwork`, the setup layer SwiftSure
+(formerly sift) and SimWalk share when they register themselves with coding agents; `SimulatorServices`
+(slim simulator boots, with the `simulator-profile` tool); and `SimulatorAnimations`. AGENTS.md has the detail.
